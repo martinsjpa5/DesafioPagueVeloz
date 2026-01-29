@@ -1,6 +1,12 @@
+using Application.Dtos.Base;
+using Application.Interfaces;
+using Application.Services;
+using Infraestrutura.EntidadeBaseFramework.Repositories;
+using Infraestrutura.EntityFramework;
 using Infraestrutura.EntityFramework.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -37,16 +43,35 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddScoped<IEfBaseRepository, EfBaseRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 // EF
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = false;
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var erros = context.ModelState.Values.SelectMany(e => e.Errors);
+        var errosResult = erros.Select(x => x.ErrorMessage).ToList();
+
+        return new UnprocessableEntityObjectResult(ResultPattern.ErroBuilder(errosResult));
+    };
+});
+
 builder.Services
-    .AddIdentityCore<IdentityUser>(options =>
+    .AddIdentityCore<ApplicationUser>(options =>
     {
         options.Password.RequiredLength = 8;
+        options.Password.RequireDigit = false;
+        options.Password.RequireLowercase = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireNonAlphanumeric = false;
         options.User.RequireUniqueEmail = true;
     })
     .AddEntityFrameworkStores<AppDbContext>()
@@ -87,6 +112,15 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+
+    var services = scope.ServiceProvider;
+
+    var db = services.GetRequiredService<AppDbContext>();
+    db.Database.EnsureCreated();
+}
 
 if (app.Environment.IsDevelopment())
 {

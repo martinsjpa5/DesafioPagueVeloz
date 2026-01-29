@@ -6,7 +6,7 @@ namespace Application.Interfaces
 {
     public interface IAuthService
     {
-        public Task<ResultPattern> RegistrarAsync(RegistroRequest request);
+        public Task<ResultPattern> RegistrarAsync(RegistrarRequest request);
         public Task<ResultPatternGeneric<string>> LogarAsync(LogarRequest request);
     }
 }
