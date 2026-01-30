@@ -1,5 +1,6 @@
 using Application.Dtos.Base;
-using Application.Interfaces;
+using Application.Interfaces.Context;
+using Application.Interfaces.Services;
 using Application.Services;
 using Infraestrutura.EntidadeBaseFramework.Repositories;
 using Infraestrutura.EntityFramework;
@@ -11,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +47,9 @@ builder.Services.AddSwaggerGen(c =>
 
 builder.Services.AddScoped<IEfBaseRepository, EfBaseRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserContext, UserContext>();
+builder.Services.AddScoped<IContaService, ContaService>();
+builder.Services.AddHttpContextAccessor();
 
 // EF
 builder.Services.AddDbContext<AppDbContext>(options =>

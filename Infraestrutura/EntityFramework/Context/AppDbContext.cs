@@ -22,5 +22,37 @@ namespace Infraestrutura.EntityFramework.Context
 
             builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         }
+
+        public override int SaveChanges()
+        {
+            AplicarAuditoria();
+            return base.SaveChanges();
+        }
+
+        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            AplicarAuditoria();
+            return base.SaveChangesAsync(cancellationToken);
+        }
+
+        private void AplicarAuditoria()
+        {
+            var agoraUtc = DateTime.UtcNow;
+
+            foreach (var entry in ChangeTracker.Entries<EntidadeBase>())
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    entry.Entity.DataCriacao = agoraUtc;
+                    entry.Entity.DataAtualizacao = agoraUtc;
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    entry.Property(x => x.DataCriacao).IsModified = false;
+
+                    entry.Entity.DataAtualizacao = agoraUtc;
+                }
+            }
+        }
     }
 }

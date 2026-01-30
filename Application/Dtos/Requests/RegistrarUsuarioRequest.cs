@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Application.Dtos.Requests
 {
-    public class RegistrarRequest
+    public class RegistrarUsuarioRequest
     {
         [Required(ErrorMessage = "O campo Email é obrigatório.")]
         [EmailAddress(ErrorMessage = "Formato de email inválido.")]

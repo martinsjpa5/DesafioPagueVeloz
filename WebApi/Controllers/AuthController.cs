@@ -1,6 +1,6 @@
 ﻿using Application.Dtos.Base;
 using Application.Dtos.Requests;
-using Application.Interfaces;
+using Application.Interfaces.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace WebApi.Controllers
@@ -16,7 +16,7 @@ namespace WebApi.Controllers
         }
 
         [HttpPost("Registrar")]
-        public async Task<ActionResult<ResultPattern>> RegistrarAsync(RegistrarRequest request)
+        public async Task<ActionResult<ResultPattern>> RegistrarAsync(RegistrarUsuarioRequest request)
         {
             ResultPattern response = await _authService.RegistrarAsync(request);
 

@@ -15,12 +15,6 @@ namespace Infraestrutura.EntityFramework.Configurations
             builder.Property(x => x.DataCriacao)
                    .IsRequired();
 
-            builder.Property(x => x.NumeroConta)
-                   .IsRequired()
-                   .HasMaxLength(30);
-
-            builder.HasIndex(x => x.NumeroConta)
-                   .IsUnique();
 
             builder.Property(x => x.SaldoDisponivel)
                    .IsRequired()

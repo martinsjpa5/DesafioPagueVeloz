@@ -1,6 +1,6 @@
 ﻿using Application.Dtos.Base;
 using Application.Dtos.Requests;
-using Application.Interfaces;
+using Application.Interfaces.Services;
 using Domain.Entities;
 using Infraestrutura.EntidadeBaseFramework.Repositories;
 using Infraestrutura.EntityFramework;
@@ -52,7 +52,7 @@ namespace Application.Services
             return ResultPatternGeneric<string>.SucessoBuilder(token);
         }
 
-        public async Task<ResultPattern> RegistrarAsync(RegistrarRequest request)
+        public async Task<ResultPattern> RegistrarAsync(RegistrarUsuarioRequest request)
         {
             Cliente cliente = new();
             await _efBaseRepository.AdicionarEntidadeBaseAsync(cliente);
