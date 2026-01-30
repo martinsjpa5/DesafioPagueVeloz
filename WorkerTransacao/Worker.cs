@@ -1,24 +1,26 @@
-namespace WorkerTransacao
+
+using Infraestrutura.Messaging.RabbitMq;
+
+namespace WorkerTransacao;
+
+public sealed class Worker : BackgroundService
 {
-    public class Worker : BackgroundService
+    private readonly ILogger<Worker> _logger;
+    private readonly IEnumerable<IMessageConsumer> _consumers;
+
+    public Worker(ILogger<Worker> logger, IEnumerable<IMessageConsumer> consumers)
     {
-        private readonly ILogger<Worker> _logger;
+        _logger = logger;
+        _consumers = consumers;
+    }
 
-        public Worker(ILogger<Worker> logger)
-        {
-            _logger = logger;
-        }
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        _logger.LogInformation("Worker started at: {time}", DateTimeOffset.Now);
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                if (_logger.IsEnabled(LogLevel.Information))
-                {
-                    _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                }
-                await Task.Delay(1000, stoppingToken);
-            }
-        }
+        foreach (var c in _consumers)
+            c.StartAsync(stoppingToken);
+
+        return Task.Delay(Timeout.Infinite, stoppingToken);
     }
 }

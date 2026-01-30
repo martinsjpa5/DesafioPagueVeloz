@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using Infraestrutura.Messaging.RabbitMq;
 using WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -49,7 +50,9 @@ builder.Services.AddScoped<IEfBaseRepository, EfBaseRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddScoped<IContaService, ContaService>();
+builder.Services.AddScoped<ITransacaoService, TransacaoService>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddRabbitMqMessaging(builder.Configuration);
 
 // EF
 builder.Services.AddDbContext<AppDbContext>(options =>

@@ -21,7 +21,7 @@ namespace Infraestrutura.EntidadeBaseFramework.Repositories
             params Func<IQueryable<T>, IIncludableQueryable<T, object>>[] includes
         ) where T : EntidadeBase;
 
-        Task<bool> EntidadeBaseExisteAsync<T>(int id) where T : EntidadeBase;
+        Task<bool> EntidadeExisteAsync<T>(Expression<Func<T, bool>> predicate) where T : EntidadeBase;
         Task<int> SalvarAlteracoesAsync();
         Task<ICollection<T>> ObterTodosAsync<T>(params Func<IQueryable<T>, IIncludableQueryable<T, object>>[] includes) where T : EntidadeBase;
         Task<T?> ObterPorIdAsync<T>(int id, params Func<IQueryable<T>, IIncludableQueryable<T, object>>[] includes) where T : EntidadeBase;

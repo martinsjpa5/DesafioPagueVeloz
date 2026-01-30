@@ -27,16 +27,15 @@ namespace Infraestrutura.EntityFramework.Configurations
                    .IsRequired()
                    .HasMaxLength(10);
 
+            builder.Property(x => x.Status)
+                   .IsRequired()
+                   .HasConversion<int>();
+
             builder.Property(x => x.MetadataJson)
-                   .HasColumnType("nvarchar(max)");
-
-            builder.Property(x => x.ReferenciaId)
-                   .IsRequired();
-
-            builder.HasIndex(x => x.ReferenciaId).IsUnique();
+                   .HasColumnType("nvarchar(max)").IsRequired(false);
 
             builder.Property(x => x.MensagemErro)
-                   .HasMaxLength(2000);
+                   .HasMaxLength(2000).IsRequired(false);
 
             builder.HasOne(x => x.Conta)
                    .WithMany(x => x.Transacoes)

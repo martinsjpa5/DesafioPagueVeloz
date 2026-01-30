@@ -124,9 +124,9 @@ namespace Infraestrutura.EntidadeBaseFramework.Repositories
             return result;
         }
 
-        public async Task<bool> EntidadeBaseExisteAsync<T>(int id) where T : EntidadeBase
+        public async Task<bool> EntidadeExisteAsync<T>(Expression<Func<T, bool>> predicate) where T : EntidadeBase
         {
-            var result = await _dataContext.Set<T>().AnyAsync(x => x.Id == id);
+            var result = await _dataContext.Set<T>().AnyAsync(predicate);
 
             return result;
         }
