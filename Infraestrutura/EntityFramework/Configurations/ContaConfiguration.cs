@@ -44,10 +44,6 @@ namespace Infraestrutura.EntityFramework.Configurations
                    .HasForeignKey(x => x.ClienteId)
                    .OnDelete(DeleteBehavior.Restrict);
 
-            builder.HasMany(x => x.Transacoes)
-                   .WithOne(x => x.Conta)
-                   .HasForeignKey(x => x.ContaId)
-                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

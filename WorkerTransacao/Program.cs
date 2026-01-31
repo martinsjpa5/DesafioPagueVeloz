@@ -1,5 +1,9 @@
+using Domain.Interfaces.Repositories;
+using Domain.Interfaces.Services;
+using Domain.Services;
 using Infraestrutura.EntidadeBaseFramework.Repositories;
 using Infraestrutura.EntityFramework.Context;
+using Infraestrutura.EntityFramework.Repositories;
 using Infraestrutura.Messaging.RabbitMq;
 using Microsoft.EntityFrameworkCore;
 using WorkerTransacao;
@@ -12,7 +16,10 @@ builder.Services.AddRabbitMqMessaging(builder.Configuration);
 
 builder.Services.AddSingleton<IMessageConsumer, TransacaoCriadaConsumer>();
 
+
 builder.Services.AddScoped<IEfBaseRepository, EfBaseRepository>();
+builder.Services.AddScoped<IProcessadorTransacaoDomainService, ProcessadorTransacaoDomainService>();
+builder.Services.AddScoped<ITransacaoRepository, TransacaoRepository>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {

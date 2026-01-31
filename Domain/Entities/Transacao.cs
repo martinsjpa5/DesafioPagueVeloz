@@ -10,8 +10,12 @@ namespace Domain.Entities
         public string Moeda { get; set; }
         public string MetadataJson { get; set; }
         public string MensagemErro { get; set; }
-        public Conta Conta { get; set; }
-        public int ContaId { get; set; }
+        public Conta ContaOrigem { get; set; }
+        public Conta ContaDestino { get; set; }
+        public int ContaOrigemId { get; set; }
+        public int? ContaDestinoId { get; set; }
+        public int? TransacaoRevertidaId { get; set; }
+        public Transacao TransacaoRevertida { get; set; }
 
 
     }

@@ -1,5 +1,8 @@
-﻿using Domain.Entities;
+﻿using Domain.Base;
+using Domain.Entities;
 using Domain.Events;
+using Domain.Interfaces.Repositories;
+using Domain.Interfaces.Services;
 using Infraestrutura.EntidadeBaseFramework.Repositories;
 using Infraestrutura.Messaging.RabbitMq;
 
@@ -31,14 +34,16 @@ namespace WorkerTransacao.Consumers
 
             using var scope = _scopeFactory.CreateScope();
             var efBaseRepository = scope.ServiceProvider.GetRequiredService<IEfBaseRepository>();
+            var processadorTransacao = scope.ServiceProvider.GetRequiredService<IProcessadorTransacaoDomainService>();
+            var transacaoRepository = scope.ServiceProvider.GetRequiredService<ITransacaoRepository>();
 
 
-            var transacao = await efBaseRepository.ObterPorCondicaoAsync<Transacao>(trans => trans.Id == message.Data.TransacaoId && trans.Status == Domain.Enums.StatusTransacaoEnum.PENDENTE);
+            var transacao = await transacaoRepository.ObterTransacaoPendenteAsync(message.Data.TransacaoId);
 
             if (transacao == null) return;
 
-            efBaseRepository.RastrearEntidadeBase(transacao);
-            transacao.Status = Domain.Enums.StatusTransacaoEnum.SUCESSO;
+            DomainPatternGeneric<Transacao?> retornoTransacao = processadorTransacao.Processar(transacao);
+
 
             await efBaseRepository.SalvarAlteracoesAsync();
 

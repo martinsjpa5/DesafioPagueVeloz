@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  webapi:
+    build:
+      context: .             
+      dockerfile: WebApi/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    container_name: webapi
+    restart: on-failure
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - DOTNET_URLS=http://+:8080;http://+:8081
+      - RABBITMQ_HOST=rabbitmq
+      - REDIS_HOST=redis
+    depends_on:
+      - rabbitmq
+      - sqlserver
+
+  workertransacao:
+    build:
+      context: .
+      dockerfile: WorkerTransacao/Dockerfile
+      args:
+        BUILD_CONFIGURATION: Release
+    container_name: workertransacao
+    restart: on-failure
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - RABBITMQ_HOST=rabbitmq
+      - REDIS_HOST=redis
+    depends_on:
+      - sqlserver
+      - rabbitmq
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    hostname: "rabbitmq"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      SA_PASSWORD: "YourStrong!Passw0rd"
+      ACCEPT_EULA: "Y"
+  
+

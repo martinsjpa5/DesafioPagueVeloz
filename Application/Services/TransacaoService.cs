@@ -32,14 +32,28 @@ namespace Application.Services
         {
             int clienteId = _userContext.ClienteId;
 
-            Conta? conta = await _efBaseRepository.ObterPorCondicaoAsync<Conta>(conta => conta.ClienteId == clienteId && conta.Id == request.ContaId);
+            Conta? contaOrigem = await _efBaseRepository.ObterPorCondicaoAsync<Conta>(conta => conta.ClienteId == clienteId && conta.Id == request.ContaOrigemId);
 
-            if (conta == null)
+            if (contaOrigem == null)
             {
-                return ResultPatternGeneric<CriarTransacaoResponse>.ErroBuilder("Conta não encontrada!");
+                return ResultPatternGeneric<CriarTransacaoResponse>.ErroBuilder("Conta Origem não encontrada!");
             }
 
-            Transacao transacao = new() { ContaId = request.ContaId, Moeda = request.Moeda, Quantia = request.Quantia, Tipo = (TipoOperacaoEnum)request.Operacao, Status = StatusTransacaoEnum.PENDENTE  };
+            if (request.Operacao == (int)TipoOperacaoEnum.Transferencia)
+            {
+                if (request.ContaDestinoId == null || request.ContaDestinoId == 0)
+                {
+                    return ResultPatternGeneric<CriarTransacaoResponse>.ErroBuilder("Conta Destino é Obrigatorio para Transferencia!");
+                }
+
+                Conta? contaDestino = await _efBaseRepository.ObterPorCondicaoAsync<Conta>(x => x.Id == request.ContaDestinoId);
+                if (contaDestino == null)
+                {
+                    return ResultPatternGeneric<CriarTransacaoResponse>.ErroBuilder("Conta Origem não encontrada!");
+                }
+            }
+
+            Transacao transacao = new() { ContaOrigemId = request.ContaOrigemId, Moeda = request.Moeda, Quantia = request.Quantia, Tipo = (TipoOperacaoEnum)request.Operacao, Status = StatusTransacaoEnum.PENDENTE, ContaDestinoId = request.ContaDestinoId, TransacaoRevertidaId = request.TransacaoRevertidaId };
 
             await _efBaseRepository.AdicionarEntidadeBaseAsync(transacao);
 
@@ -50,9 +64,9 @@ namespace Application.Services
                 Data = transacao.DataCriacao,
                 Id = transacao.Id,
                 MensagemErro = transacao.MensagemErro,
-                SaldoDisponivel = conta.SaldoDisponivel,
-                SaldoReservado = conta.SaldoReservado,
-                SaldoTotal = conta.SaldoReservado + conta.SaldoDisponivel
+                SaldoDisponivel = contaOrigem.SaldoDisponivel,
+                SaldoReservado = contaOrigem.SaldoReservado,
+                SaldoTotal = contaOrigem.SaldoReservado + contaOrigem.SaldoDisponivel
             };
 
 
