@@ -7,6 +7,7 @@ using Application.Interfaces.Services;
 using Domain.Entities;
 using Domain.Enums;
 using Infraestrutura.EntidadeBaseFramework.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Services
 {
@@ -21,11 +22,26 @@ namespace Application.Services
             _userContext = userContext;
         }
 
-        public async Task<ResultPatternGeneric<IEnumerable<ObterContaResponse>>> ObterPorUsuarioLogadoAsync()
+        public async Task<ResultPatternGeneric<IEnumerable<ObterContaParaTransferenciaResponse>>> ObterContasParaTransferenciaAsync(int contaId)
+        {
+            ICollection<Conta> contas = await _efBaseRepository.ObterTodosPorCondicaoAsync<Conta>(conta => conta.Id != contaId && conta.Status == StatusContaEnum.Ativa, x => x.Include(y => y.Cliente));
+
+            IEnumerable<ObterContaParaTransferenciaResponse> contasResponse = contas.Select(conta => new ObterContaParaTransferenciaResponse
+            {
+                Id = conta.Id,
+                NomeCliente = conta.Cliente.Nome
+            });
+
+            return ResultPatternGeneric<IEnumerable<ObterContaParaTransferenciaResponse>>.SucessoBuilder(contasResponse);
+        }
+
+
+        public async Task<ResultPatternGeneric<ObterClienteResponse>> ObterPorUsuarioLogadoAsync()
         {
             ICollection<Conta> contas = await _efBaseRepository.ObterTodosPorCondicaoAsync<Conta>(conta => conta.ClienteId == _userContext.ClienteId);
+            Cliente? cliente = await _efBaseRepository.ObterPorCondicaoAsync<Cliente>(cliente => cliente.Id == _userContext.ClienteId);
 
-            IEnumerable<ObterContaResponse> response = contas.Select(conta => new ObterContaResponse
+            IEnumerable<ObterContaResponse> contaResponse = contas.Select(conta => new ObterContaResponse
             {
                 Id = conta.Id,
                 LimiteDeCredito = conta.LimiteDeCredito,
@@ -34,12 +50,14 @@ namespace Application.Services
                 Status = conta.Status.ToString()
             });
 
-            return ResultPatternGeneric<IEnumerable<ObterContaResponse>>.SucessoBuilder(response);
+            ObterClienteResponse clienteResponse = new() { Nome = cliente.Nome, Contas = contaResponse };
+
+            return ResultPatternGeneric<ObterClienteResponse>.SucessoBuilder(clienteResponse);
         }
 
         public async Task<ResultPattern> RegistrarPorUsuarioLogadoAsync(RegistrarContaRequest request)
         {
-            var conta = new Conta()
+            Conta conta = new()
             {
                 ClienteId = _userContext.ClienteId,
                 LimiteDeCredito = request.LimiteDeCredito,

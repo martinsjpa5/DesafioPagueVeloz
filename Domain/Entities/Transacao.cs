@@ -14,8 +14,8 @@ namespace Domain.Entities
         public Conta ContaDestino { get; set; }
         public int ContaOrigemId { get; set; }
         public int? ContaDestinoId { get; set; }
-        public int? TransacaoRevertidaId { get; set; }
-        public Transacao TransacaoRevertida { get; set; }
+        public int? TransacaoEstornadaId { get; set; }
+        public Transacao TransacaoEstornada { get; set; }
 
 
     }

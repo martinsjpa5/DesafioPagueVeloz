@@ -10,6 +10,7 @@ using Domain.Events;
 using Infraestrutura.EntidadeBaseFramework.Repositories;
 using Infraestrutura.Messaging.RabbitMq;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 
 namespace Application.Services
 {
@@ -52,14 +53,35 @@ namespace Application.Services
                     return ResultPatternGeneric<CriarTransacaoResponse>.ErroBuilder("Conta Origem não encontrada!");
                 }
             }
+            else if (request.Operacao == (int)TipoOperacaoEnum.Estorno)
+            {
+                if(request.TransacaoEstornadaId == null || request.TransacaoEstornadaId == 0)
+                {
+                    return ResultPatternGeneric<CriarTransacaoResponse>.ErroBuilder("O Id da Transacao que você quer estornar é obrigatório");
+                }
+                var transacaoEstornada = await _efBaseRepository.ObterPorCondicaoAsync<Transacao>(x => x.TransacaoEstornadaId == request.TransacaoEstornadaId && x.Status == StatusTransacaoEnum.SUCESSO && x.Tipo == TipoOperacaoEnum.Estorno);
+                if (transacaoEstornada != null)
+                {
+                    return ResultPatternGeneric<CriarTransacaoResponse>.ErroBuilder("A Transação que você está tentando estornar já foi estornada");
+                }
+            }
 
-            Transacao transacao = new() { ContaOrigemId = request.ContaOrigemId, Moeda = request.Moeda, Quantia = request.Quantia, Tipo = (TipoOperacaoEnum)request.Operacao, Status = StatusTransacaoEnum.PENDENTE, ContaDestinoId = request.ContaDestinoId, TransacaoRevertidaId = request.TransacaoRevertidaId };
+            Transacao transacao = new()
+            {
+                ContaOrigemId = request.ContaOrigemId,
+                Moeda = request.Moeda,
+                Quantia = request.Quantia,
+                Tipo = (TipoOperacaoEnum)request.Operacao,
+                Status = StatusTransacaoEnum.PENDENTE,
+                ContaDestinoId = request.ContaDestinoId,
+                TransacaoEstornadaId = request.TransacaoEstornadaId,
+            };
 
             await _efBaseRepository.AdicionarEntidadeBaseAsync(transacao);
 
             await _efBaseRepository.SalvarAlteracoesAsync();
 
-            var response = new CriarTransacaoResponse()
+            CriarTransacaoResponse response = new()
             {
                 Data = transacao.DataCriacao,
                 Id = transacao.Id,
@@ -70,12 +92,12 @@ namespace Application.Services
             };
 
 
-            var evt = new TransacaoCriadaEvent() { TransacaoId = transacao.Id };
+            TransacaoCriadaEvent evt = new() { TransacaoId = transacao.Id };
 
-            var shard = ShardRouter.CalculateShard(clienteId.ToString(), _opt.ShardCount);
+            int shard = ShardRouter.CalculateShard(clienteId.ToString(), _opt.ShardCount);
 
-            var exchange = "transacoes.exchange";
-            var routingKey = $"transacoes.shard-{shard}";
+            string exchange = "transacoes.exchange";
+            string routingKey = $"transacoes.shard-{shard}";
 
             await _publisher.PublishAsync(exchange, routingKey, evt, headers: new Dictionary<string, object>
             {
@@ -85,9 +107,59 @@ namespace Application.Services
             return ResultPatternGeneric<CriarTransacaoResponse>.SucessoBuilder(response);
         }
 
-        public Task<ResultPattern> ExecutarTransacaoAsync()
+        public async Task<ResultPatternGeneric<IEnumerable<ObterTransacaoResponse>>> ObterTransacoesPassiveisDeEstornoUsuarioLogadoAsync(int contaId)
         {
-            throw new NotImplementedException();
+            var transacoes = await _efBaseRepository.ObterTodosPorCondicaoAsync<Transacao>(x => x.ContaOrigemId == contaId && x.ContaOrigem.ClienteId == _userContext.ClienteId
+            && x.Status == StatusTransacaoEnum.SUCESSO && x.TransacaoEstornadaId == null,
+                trans => trans.Include(x => x.ContaDestino).ThenInclude(y => y.Cliente));
+
+
+            var transacoesEstornadas = await _efBaseRepository.ObterTodosPorCondicaoAsync<Transacao>(x => x.ContaOrigemId == contaId && x.ContaOrigem.ClienteId == _userContext.ClienteId
+            && x.Status == StatusTransacaoEnum.SUCESSO && x.TransacaoEstornadaId != null);
+
+            var idsJaEstornados = transacoesEstornadas
+                                .Select(t => t.TransacaoEstornadaId!.Value)
+                                .ToHashSet();
+
+            var transacoesComPossibilidadeDeEstorno = transacoes
+                .Where(t => t.TransacaoEstornadaId == null)
+                .Where(t => !idsJaEstornados.Contains(t.Id))
+                .ToList();
+
+
+            var response = transacoesComPossibilidadeDeEstorno.Select(x => new ObterTransacaoResponse
+            {
+                TransacaoEstornadaId = x.TransacaoEstornadaId,
+                ContaDestinoId = x.ContaDestinoId,
+                Moeda = x.Moeda,
+                Id = x.Id,
+                NomeClienteContaDestino = x.ContaDestino?.Cliente.Nome,
+                Quantia = x.Quantia,
+                Status = x.Status.ToString(),
+                Tipo = x.Tipo.ToString(),
+            });
+
+            return ResultPatternGeneric<IEnumerable<ObterTransacaoResponse>>.SucessoBuilder(response);
+        }
+
+        public async Task<ResultPatternGeneric<IEnumerable<ObterTransacaoResponse>>> ObterTransacoesUsuarioLogadoAsync(int contaId)
+        {
+            var transacoes = await _efBaseRepository.ObterTodosPorCondicaoAsync<Transacao>(x => (x.ContaOrigemId == contaId && x.ContaOrigem.ClienteId == _userContext.ClienteId) || (x.ContaDestinoId == contaId && x.ContaDestino.ClienteId == _userContext.ClienteId),
+                trans => trans.Include(x => x.ContaDestino).ThenInclude(y => y.Cliente));
+
+            var response = transacoes.Select(x => new ObterTransacaoResponse
+            {
+                TransacaoEstornadaId = x.TransacaoEstornadaId,
+                ContaDestinoId = x.ContaDestinoId,
+                Moeda = x.Moeda,
+                Id = x.Id,
+                NomeClienteContaDestino = x.ContaDestino?.Cliente.Nome,
+                Quantia = x.Quantia,
+                Status = x.Status.ToString(),
+                Tipo = x.Tipo.ToString(),
+            });
+
+            return ResultPatternGeneric<IEnumerable<ObterTransacaoResponse>>.SucessoBuilder(response);
         }
     }
 }

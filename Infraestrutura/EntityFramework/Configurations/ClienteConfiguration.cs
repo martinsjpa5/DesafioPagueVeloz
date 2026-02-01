@@ -13,6 +13,9 @@ namespace Infraestrutura.EntityFramework.Configurations
 
             builder.HasKey(x => x.Id);
 
+            builder.Property(x => x.Nome).IsRequired();
+
+
             builder.Property(x => x.DataCriacao)
                    .IsRequired();
 

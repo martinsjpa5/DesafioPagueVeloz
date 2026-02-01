@@ -1,5 +1,6 @@
 using Application.Dtos.Base;
 using Application.Dtos.Requests;
+using Application.Dtos.Responses;
 using Application.Interfaces.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,14 +29,20 @@ namespace WebApi.Controllers
 
 
         [HttpGet]
-        public async Task<ActionResult<ResultPattern>> ObterPorUsuarioLogadoAsync()
+        public async Task<ActionResult<ResultPatternGeneric<ObterClienteResponse>>> ObterPorUsuarioLogadoAsync()
         {
             var result = await _contaService.ObterPorUsuarioLogadoAsync();
 
             return CustomResponse(result);
         }
 
+        [HttpGet("contasParaTransferencia/{id}")]
+        public async Task<ActionResult<ResultPatternGeneric<IEnumerable<ObterContaParaTransferenciaResponse>>>> ObterContasParaTransferenciaAsync(int id)
+        {
+            var result = await _contaService.ObterContasParaTransferenciaAsync(id);
 
+            return CustomResponse(result);
+        }
 
     }
 }

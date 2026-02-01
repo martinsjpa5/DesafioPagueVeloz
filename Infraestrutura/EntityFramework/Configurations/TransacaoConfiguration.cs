@@ -38,7 +38,6 @@ namespace Infraestrutura.EntityFramework.Configurations
                    .HasMaxLength(2000)
                    .IsRequired(false);
 
-            // ContaOrigem (sem navegação inversa pra evitar ambiguidade)
             builder.HasOne(x => x.ContaOrigem)
                    .WithMany()
                    .HasForeignKey(x => x.ContaOrigemId)
@@ -46,7 +45,6 @@ namespace Infraestrutura.EntityFramework.Configurations
 
             builder.HasIndex(x => x.ContaOrigemId);
 
-            // ContaDestino (opcional)
             builder.HasOne(x => x.ContaDestino)
                    .WithMany()
                    .HasForeignKey(x => x.ContaDestinoId)
@@ -55,14 +53,13 @@ namespace Infraestrutura.EntityFramework.Configurations
 
             builder.HasIndex(x => x.ContaDestinoId);
 
-            // TransacaoRevertida (opcional) - FK correta
-            builder.HasOne(x => x.TransacaoRevertida)
+            builder.HasOne(x => x.TransacaoEstornada)
                    .WithMany()
-                   .HasForeignKey(x => x.TransacaoRevertidaId)
+                   .HasForeignKey(x => x.TransacaoEstornadaId)
                    .OnDelete(DeleteBehavior.Restrict)
                    .IsRequired(false);
 
-            builder.HasIndex(x => x.TransacaoRevertidaId);
+            builder.HasIndex(x => x.TransacaoEstornadaId);
         }
 
     }

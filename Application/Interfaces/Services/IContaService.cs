@@ -7,6 +7,7 @@ namespace Application.Interfaces.Services
     public interface IContaService
     {
         Task<ResultPattern> RegistrarPorUsuarioLogadoAsync(RegistrarContaRequest request);
-        Task<ResultPatternGeneric<IEnumerable<ObterContaResponse>>> ObterPorUsuarioLogadoAsync();
+        Task<ResultPatternGeneric<ObterClienteResponse>> ObterPorUsuarioLogadoAsync();
+        Task<ResultPatternGeneric<IEnumerable<ObterContaParaTransferenciaResponse>>> ObterContasParaTransferenciaAsync(int contaId);
     }
 }

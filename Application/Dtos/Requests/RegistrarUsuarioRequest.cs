@@ -5,6 +5,9 @@ namespace Application.Dtos.Requests
 {
     public class RegistrarUsuarioRequest
     {
+        [Required(ErrorMessage = "O campo Nome é obrigatório.")]
+        public string Nome { get; set; }
+
         [Required(ErrorMessage = "O campo Email é obrigatório.")]
         [EmailAddress(ErrorMessage = "Formato de email inválido.")]
         public string Email { get; set; }

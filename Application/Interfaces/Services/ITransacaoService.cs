@@ -8,6 +8,7 @@ namespace Application.Interfaces.Services
     public interface ITransacaoService
     {
         public Task<ResultPatternGeneric<CriarTransacaoResponse>> CriarTransacaoAsync(CriarTransacaoRequest request, string correlationId);
-        public Task<ResultPattern> ExecutarTransacaoAsync();
+        Task<ResultPatternGeneric<IEnumerable<ObterTransacaoResponse>>> ObterTransacoesPassiveisDeEstornoUsuarioLogadoAsync(int contaId);
+        Task<ResultPatternGeneric<IEnumerable<ObterTransacaoResponse>>> ObterTransacoesUsuarioLogadoAsync(int contaId);
     }
 }

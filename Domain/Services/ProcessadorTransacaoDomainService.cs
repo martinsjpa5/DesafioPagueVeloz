@@ -26,9 +26,6 @@ namespace Domain.Services
             };
         }
 
-        // =========================
-        // OPERAÇÕES
-        // =========================
 
         private DomainPatternGeneric<Transacao?> ProcessarCredito(Transacao t)
         {
@@ -110,7 +107,7 @@ namespace Domain.Services
 
         private DomainPatternGeneric<Transacao?> ProcessarEstorno(Transacao solicitacao)
         {
-            var original = solicitacao.TransacaoRevertida;
+            var original = solicitacao.TransacaoEstornada;
 
             if (original is null)
                 return Erro(solicitacao, "Transação original é obrigatória para estorno");
@@ -124,8 +121,6 @@ namespace Domain.Services
 
             if (!resultado.Sucesso)
             {
-                // Se deu erro aplicando estorno, marca a SOLICITAÇÃO como falha também.
-                // (A transação "estorno" nem será adicionada no banco se você respeitar retorno.Sucesso na Application)
                 return Erro(solicitacao, resultado.Erros);
             }
 
@@ -137,8 +132,6 @@ namespace Domain.Services
 
         private DomainPatternGeneric<Transacao?> AplicarEstorno(Transacao estorno, Transacao original)
         {
-            // Se preferir, você pode marcar erro no próprio "estorno" aqui, mas como ele ainda nem existe no banco,
-            // o mais importante é retornar erro e também marcar a solicitacao como falha (feito acima).
 
             switch (original.Tipo)
             {
@@ -192,9 +185,6 @@ namespace Domain.Services
             return DomainPatternGeneric<Transacao?>.SucessoBuilder(null);
         }
 
-        // =========================
-        // HELPERS
-        // =========================
 
         private static Transacao CriarTransacaoEstorno(Transacao solicitacao, Transacao original)
         {
@@ -208,8 +198,8 @@ namespace Domain.Services
                 ContaDestino = original.ContaDestino,
                 ContaOrigemId = original.ContaOrigemId,
                 ContaDestinoId = original.ContaDestinoId,
-                TransacaoRevertida = original,
-                TransacaoRevertidaId = original.Id,
+                TransacaoEstornada = original,
+                TransacaoEstornadaId = original.Id,
                 MetadataJson = solicitacao.MetadataJson
             };
         }
@@ -241,10 +231,8 @@ namespace Domain.Services
         {
             t.Status = StatusTransacaoEnum.FALHA;
 
-            // guarda tudo (até 2000 chars) — se quiser só o primeiro, troque por erros.First()
             var msg = string.Join(" | ", erros.Where(e => !string.IsNullOrWhiteSpace(e)));
 
-            // se seu campo no banco é 2000, garante não estourar
             if (msg.Length > 2000) msg = msg.Substring(0, 2000);
 
             t.MensagemErro = msg;
@@ -270,7 +258,6 @@ namespace Domain.Services
             return DomainPatternGeneric<Transacao?>.ErroBuilder(errosValidos);
         }
 
-        // Usado quando não queremos mutar uma Transacao específica (ex.: erro interno do AplicarEstorno)
         private static DomainPatternGeneric<Transacao?> ErroBuilderSemMutacao(string erro)
             => DomainPatternGeneric<Transacao?>.ErroBuilder(erro);
     }

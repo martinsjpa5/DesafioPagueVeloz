@@ -47,14 +47,15 @@ namespace Application.Services
                 return ResultPatternGeneric<string>.ErroBuilder(msgErroCredenciais);
             }
 
-            var token = CriarToken(user);
+            string token = CriarToken(user);
 
             return ResultPatternGeneric<string>.SucessoBuilder(token);
         }
 
         public async Task<ResultPattern> RegistrarAsync(RegistrarUsuarioRequest request)
         {
-            Cliente cliente = new();
+            Cliente cliente = new() { Nome = request.Nome};
+
             await _efBaseRepository.AdicionarEntidadeBaseAsync(cliente);
             await _efBaseRepository.SalvarAlteracoesAsync();
 

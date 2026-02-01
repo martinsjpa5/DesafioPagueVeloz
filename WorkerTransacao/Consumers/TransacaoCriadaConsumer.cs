@@ -1,6 +1,4 @@
-﻿using Domain.Base;
-using Domain.Entities;
-using Domain.Events;
+﻿using Domain.Events;
 using Domain.Interfaces.Repositories;
 using Domain.Interfaces.Services;
 using Infraestrutura.EntidadeBaseFramework.Repositories;
@@ -33,16 +31,16 @@ namespace WorkerTransacao.Consumers
                 message.Data.TransacaoId, message.CorrelationId);
 
             using var scope = _scopeFactory.CreateScope();
-            var efBaseRepository = scope.ServiceProvider.GetRequiredService<IEfBaseRepository>();
-            var processadorTransacao = scope.ServiceProvider.GetRequiredService<IProcessadorTransacaoDomainService>();
-            var transacaoRepository = scope.ServiceProvider.GetRequiredService<ITransacaoRepository>();
+            IEfBaseRepository efBaseRepository = scope.ServiceProvider.GetRequiredService<IEfBaseRepository>();
+            IProcessadorTransacaoDomainService processadorTransacao = scope.ServiceProvider.GetRequiredService<IProcessadorTransacaoDomainService>();
+            ITransacaoRepository transacaoRepository = scope.ServiceProvider.GetRequiredService<ITransacaoRepository>();
 
 
             var transacao = await transacaoRepository.ObterTransacaoPendenteAsync(message.Data.TransacaoId);
 
             if (transacao == null) return;
 
-            DomainPatternGeneric<Transacao?> retornoTransacao = processadorTransacao.Processar(transacao);
+            processadorTransacao.Processar(transacao);
 
 
             await efBaseRepository.SalvarAlteracoesAsync();
