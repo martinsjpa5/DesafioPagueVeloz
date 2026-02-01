@@ -1,0 +1,117 @@
+<div class="d-flex justify-content-center align-items-center vh-100 bg-light">
+  <div class="card shadow p-4" style="width: 350px;">
+    <h3 class="text-center mb-4">Criar Conta</h3>
+    <form [formGroup]="form" (ngSubmit)="registrar()">
+      <div class="mb-3">
+        <label for="nome" class="form-label">Nome</label>
+        <input
+          id="nome"
+          type="text"
+          class="form-control"
+          formControlName="nome"
+          placeholder="Digite seu nome"
+        />
+
+        <div
+          class="text-danger mt-1"
+          *ngIf="form.get('nome')?.touched && form.get('nome')?.invalid"
+        >
+          <small *ngIf="form.get('nome')?.errors?.['required']">
+            O campo Nome é obrigatório.
+          </small>
+        </div>
+      </div>
+
+
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input
+          id="email"
+          type="email"
+          class="form-control"
+          formControlName="email"
+          placeholder="Digite seu email"
+        />
+
+        <div
+          class="text-danger mt-1"
+          *ngIf="form.get('email')?.touched && form.get('email')?.invalid"
+        >
+          <small *ngIf="form.get('email')?.errors?.['required']">
+            O campo Email é obrigatório.
+          </small>
+          <small *ngIf="form.get('email')?.errors?.['email']">
+            Formato de email inválido.
+          </small>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="senha" class="form-label">Senha</label>
+        <input
+          id="senha"
+          type="password"
+          class="form-control"
+          formControlName="senha"
+          placeholder="Digite sua senha"
+        />
+
+        <div
+          class="text-danger mt-1"
+          *ngIf="form.get('senha')?.touched && form.get('senha')?.invalid"
+        >
+          <small *ngIf="form.get('senha')?.errors?.['required']">
+            O campo Senha é obrigatório.
+          </small>
+          <small *ngIf="form.get('senha')?.errors?.['minlength']">
+            A senha deve ter no mínimo 6 caracteres.
+          </small>
+          <small *ngIf="form.get('senha')?.errors?.['maxlength']">
+            A senha deve ter no máximo 100 caracteres.
+          </small>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="confirmarSenha" class="form-label">Confirmar Senha</label>
+        <input
+          id="confirmarSenha"
+          type="password"
+          class="form-control"
+          formControlName="confirmarSenha"
+          placeholder="Confirme sua senha"
+        />
+
+        <div
+          class="text-danger mt-1"
+          *ngIf="
+            form.get('confirmarSenha')?.touched &&
+            (form.get('confirmarSenha')?.invalid || form.errors?.['senhasDiferentes'])
+          "
+        >
+          <small *ngIf="form.get('confirmarSenha')?.errors?.['required']">
+            A confirmação de senha é obrigatória.
+          </small>
+          <small *ngIf="form.errors?.['senhasDiferentes']">
+            As senhas não coincidem.
+          </small>
+        </div>
+      </div>
+
+      <div class="d-grid my-3">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="form.invalid"
+        >
+          Registrar
+        </button>
+      </div>
+
+      <div class="text-center">
+        <a routerLink="/login">Já possui conta? Entrar</a>
+      </div>
+
+    </form>
+  </div>
+</div>

@@ -1,0 +1,68 @@
+<div class="d-flex justify-content-center align-items-center vh-100 bg-light">
+  <div class="card shadow p-4" style="width: 350px;">
+    <h3 class="text-center mb-4">Login</h3>
+    <form [formGroup]="form" (ngSubmit)="login()">
+
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input
+          id="email"
+          type="email"
+          class="form-control"
+          formControlName="email"
+          placeholder="Digite seu email"
+        />
+
+        <div
+          class="text-danger mt-1"
+          *ngIf="form.get('email')?.touched && form.get('email')?.invalid"
+        >
+          <small *ngIf="form.get('email')?.errors?.['required']">
+            O campo Email é obrigatório.
+          </small>
+          <small *ngIf="form.get('email')?.errors?.['email']">
+            Formato de email inválido.
+          </small>
+        </div>
+      </div>
+
+      <!-- Senha -->
+      <div class="mb-3">
+        <label for="senha" class="form-label">Senha</label>
+        <input
+          id="senha"
+          type="password"
+          class="form-control"
+          formControlName="senha"
+          placeholder="Digite sua senha"
+        />
+
+        <div
+          class="text-danger mt-1"
+          *ngIf="form.get('senha')?.touched && form.get('senha')?.invalid"
+        >
+          <small *ngIf="form.get('senha')?.errors?.['required']">
+            O campo Senha é obrigatório.
+          </small>
+        </div>
+      </div>
+
+      <!-- Botão -->
+      <div class="d-grid my-3">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="form.invalid"
+        >
+          Entrar
+        </button>
+      </div>
+
+      <!-- Link -->
+      <div class="text-center">
+        <a routerLink="/register">Criar conta</a>
+      </div>
+
+    </form>
+  </div>
+</div>

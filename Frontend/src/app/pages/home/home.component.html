@@ -1,0 +1,274 @@
+<div class="container py-4">
+
+  <!-- Top actions -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="fw-semibold">Painel</div>
+
+    <button type="button" class="btn btn-outline-secondary" (click)="atualizarDados(true)" [disabled]="isRefreshing">
+      Atualizar
+    </button>
+  </div>
+
+  <!-- Seletor de Conta (mantém ngModel apenas aqui) -->
+  <div class="row g-3 align-items-end">
+    <div class="col-12 col-md-6">
+      <label class="form-label">Conta (Origem)</label>
+
+      <div class="input-group">
+        <select class="form-select" name="contaSelecionadaId" [(ngModel)]="contaSelecionadaId"
+          (change)="onSelecionarConta()">
+          <option [ngValue]="null">Selecione...</option>
+          <option *ngFor="let c of contas" [ngValue]="c.id">
+            {{ c.id }} - {{ cliente?.nome }}
+          </option>
+        </select>
+
+        <button type="button" class="btn btn-outline-primary" (click)="abrirModalCadastroConta()">
+          + Conta
+        </button>
+      </div>
+    </div>
+
+    <div class="col-12 col-md-6 d-flex gap-2 justify-content-md-end">
+      <button type="button" class="btn btn-primary" (click)="abrirModalCriarTransacao()"
+        [disabled]="!contaSelecionadaId">
+        Nova Transação
+      </button>
+    </div>
+  </div>
+
+  <!-- Card da Conta Selecionada -->
+  <div class="row mt-3" *ngIf="contaSelecionada as c">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div class="fw-semibold">Conta Selecionada</div>
+          <span class="badge bg-secondary">ID {{ c.id }}</span>
+        </div>
+
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-12 col-md-3">
+              <div class="text-muted small">Saldo Disponível</div>
+              <div class="fw-semibold"> {{ c.saldoDisponivel | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</div>
+            </div>
+
+            <div class="col-12 col-md-3">
+              <div class="text-muted small">Saldo Reservado</div>
+              <div class="fw-semibold">{{ c.saldoReservado | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</div>
+            </div>
+
+            <div class="col-12 col-md-3">
+              <div class="text-muted small">Limite de Crédito</div>
+              <div class="fw-semibold">{{ c.limiteDeCredito | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</div>
+            </div>
+
+            <div class="col-12 col-md-3">
+              <div class="text-muted small">Status</div>
+              <div class="fw-semibold">{{ c.status }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Transações -->
+  <div class="card mt-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="fw-semibold">Transações</div>
+      <span class="small text-muted" *ngIf="contaSelecionadaId">
+        Conta {{ contaSelecionadaId }}
+      </span>
+    </div>
+
+    <div class="card-body">
+      <div *ngIf="!contaSelecionadaId" class="text-muted">
+        Selecione uma conta para listar as transações.
+      </div>
+
+      <div class="table-responsive" *ngIf="contaSelecionadaId && transacoes.length > 0">
+        <table class="table table-sm table-striped align-middle">
+          <thead>
+            <tr>
+              <th>Id</th>
+              <th>Tipo</th>
+              <th>Status</th>
+              <th>Quantia</th>
+              <th>Moeda</th>
+              <th>Transação Estornada</th>
+              <th>Conta Destino</th>
+              <th>Cliente Destino</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let t of transacoes">
+              <td>{{ t.id }}</td>
+              <td>{{ t.tipo }}</td>
+              <td>{{ t.status }}</td>
+              <td>{{ t.quantia | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
+              <td>{{ t.moeda }}</td>
+              <td>{{ t.transacaoEstornadaId ?? '-' }}</td>
+              <td>{{ t.contaDestinoId ?? '-' }}</td>
+              <td>{{ t.nomeClienteContaDestino ?? '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="contaSelecionadaId && transacoes.length === 0" class="text-muted">
+        Nenhuma transação encontrada.
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Cadastrar Conta -->
+  <ng-template #modalCadastrarConta let-modal>
+    <div class="modal-header">
+      <h5 class="modal-title">Cadastrar Conta</h5>
+      <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+    </div>
+
+    <form [formGroup]="formConta" (ngSubmit)="salvarConta(modal)">
+      <div class="modal-body">
+
+        <div class="mb-3">
+          <label class="form-label">Saldo Inicial</label>
+          <input type="text" class="form-control" formControlName="saldoInicial" mask="separator.2"
+            thousandSeparator="." decimalMarker="," />
+          <div class="text-danger mt-1"
+            *ngIf="formConta.get('saldoInicial')?.touched && formConta.get('saldoInicial')?.invalid">
+            <small>O campo Saldo Inicial é obrigatório.</small>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Limite de Crédito</label>
+          <input type="text" class="form-control" formControlName="limiteDeCredito" mask="separator.2"
+            thousandSeparator="." decimalMarker="," />
+          <div class="text-danger mt-1"
+            *ngIf="formConta.get('limiteDeCredito')?.touched && formConta.get('limiteDeCredito')?.invalid">
+            <small>O campo Limite de Crédito é obrigatório.</small>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="formConta.invalid">
+          Salvar
+        </button>
+      </div>
+    </form>
+  </ng-template>
+
+  <!-- Modal: Criar Transação -->
+  <ng-template #modalCriarTransacao let-modal>
+    <div class="modal-header">
+      <h5 class="modal-title">Nova Transação</h5>
+      <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
+    </div>
+
+    <form [formGroup]="formTransacao" (ngSubmit)="salvarTransacao(modal)">
+      <div class="modal-body">
+        <div class="row g-3">
+
+          <div class="col-md-4">
+            <label class="form-label">Operação</label>
+            <select class="form-select" formControlName="operacao">
+              <option *ngFor="let op of operacoes" [ngValue]="op.value">
+                {{ op.label }}
+              </option>
+            </select>
+            <div class="text-danger mt-1"
+              *ngIf="formTransacao.get('operacao')?.touched && formTransacao.get('operacao')?.invalid">
+              <small>O campo Operação é obrigatório.</small>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Quantia</label>
+            <input type="text" class="form-control" formControlName="quantia" mask="separator.2" thousandSeparator="."
+              decimalMarker="," />
+            <div class="text-danger mt-1"
+              *ngIf="formTransacao.get('quantia')?.touched && formTransacao.get('quantia')?.invalid">
+              <small>O campo Quantia é obrigatório.</small>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">Moeda</label>
+            <input type="text" class="form-control" formControlName="moeda" />
+            <div class="text-danger mt-1"
+              *ngIf="formTransacao.get('moeda')?.touched && formTransacao.get('moeda')?.invalid">
+              <small>O campo Moeda é obrigatório.</small>
+            </div>
+          </div>
+
+          <!-- Conta Destino: SELECT (Transferência) -->
+          <div class="col-md-6" *ngIf="isTransferencia">
+            <label class="form-label">Conta Destino</label>
+
+            <select class="form-select" formControlName="contaDestinoId" [disabled]="carregandoContasDestino">
+              <option [ngValue]="null">Selecione...</option>
+              <option *ngFor="let cd of contasDestino" [ngValue]="cd.id">
+                {{ cd.id }} - {{ cd.nomeCliente }}
+              </option>
+            </select>
+
+            <div class="form-text" *ngIf="carregandoContasDestino">
+              Carregando contas para transferência...
+            </div>
+
+            <div class="text-danger mt-1" *ngIf="formTransacao.get('contaDestinoId')?.touched
+                && formTransacao.get('contaDestinoId')?.errors?.['required']">
+              <small>Conta Destino é obrigatória para Transferência.</small>
+            </div>
+          </div>
+
+          <!-- Transação Estornada: SELECT (Estorno) -->
+          <div class="col-md-6" *ngIf="isEstorno">
+            <label class="form-label">Transação a Estornar</label>
+
+            <select class="form-select" formControlName="transacaoEstornadaId" [disabled]="carregandoTransacoesEstorno">
+              <option [ngValue]="null">Selecione...</option>
+              <option *ngFor="let te of transacoesPassiveisDeEstorno" [ngValue]="te.id">
+                {{ formatarTransacaoParaEstorno(te) }}
+              </option>
+            </select>
+
+            <div class="form-text" *ngIf="carregandoTransacoesEstorno">
+              Carregando transações passíveis de estorno...
+            </div>
+
+            <div class="text-danger mt-1" *ngIf="formTransacao.get('transacaoEstornadaId')?.touched
+                && formTransacao.get('transacaoEstornadaId')?.errors?.['required']">
+              <small>Selecione a transação que deseja estornar.</small>
+            </div>
+
+            <div class="text-muted small mt-2"
+              *ngIf="!carregandoTransacoesEstorno && transacoesPassiveisDeEstorno.length === 0">
+              Nenhuma transação disponível para estorno.
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="alert alert-info mb-0">
+              Conta Origem: <strong>{{ contaSelecionadaId }}</strong>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="formTransacao.invalid">
+          Criar
+        </button>
+      </div>
+    </form>
+  </ng-template>
+
+</div>

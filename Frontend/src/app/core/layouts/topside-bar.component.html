@@ -1,0 +1,37 @@
+<nav class="navbar navbar-expand-lg topbar-app px-3 px-md-4 py-3">
+  <a class="navbar-brand fw-bold text-light d-flex align-items-center gap-2" routerLink="/vitrine">
+    <span>Banking</span>
+  </a>
+
+  <button
+    class="navbar-toggler text-light border-0"
+    type="button"
+    data-bs-toggle="collapse"
+    data-bs-target="#menuTopBar"
+    aria-controls="menuTopBar"
+    aria-expanded="false"
+    aria-label="Toggle navigation"
+  >
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="menuTopBar">
+    <ul class="navbar-nav me-auto gap-lg-2">
+
+    </ul>
+
+    <div class="d-flex align-items-center gap-3 text-light user-area">
+      <span class="user-email" *ngIf="emailUsuario">
+        {{ emailUsuario }}
+      </span>
+
+      <button class="btn btn-light btn-sm btn-logout" (click)="logout()">
+        Sair
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="content p-3 p-md-4">
+  <router-outlet></router-outlet>
+</div>

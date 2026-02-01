@@ -1,0 +1,9 @@
+<div class="overlay" *ngIf="loadingService.loading$ | async" aria-busy="true" aria-live="polite">
+  <div class="loader-card" role="status">
+    <div class="ring" aria-hidden="true"></div>
+    <div class="loader-text">
+      <div class="title">Carregando…</div>
+      <div class="subtitle">Aguarde um instante</div>
+    </div>
+  </div>
+</div>
