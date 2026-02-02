@@ -13,5 +13,6 @@ namespace Application.Dtos.Responses
         public int? TransacaoEstornadaId { get; set; }
         public int? ContaDestinoId { get; set; }
         public string? NomeClienteContaDestino { get; set; }
+        public string? MensagemErro { get; set; }
     }
 }

@@ -99,6 +99,7 @@
               <th>Transação Estornada</th>
               <th>Conta Destino</th>
               <th>Cliente Destino</th>
+              <th>Erro</th>
             </tr>
           </thead>
           <tbody>
@@ -111,6 +112,20 @@
               <td>{{ t.transacaoEstornadaId ?? '-' }}</td>
               <td>{{ t.contaDestinoId ?? '-' }}</td>
               <td>{{ t.nomeClienteContaDestino ?? '-' }}</td>
+              <td class="text-center">
+  <ng-container *ngIf="t.mensagemErro as err; else semErro">
+    <span
+      class="text-danger"
+      style="cursor: help;"
+      [ngbTooltip]="err"
+      placement="top"
+      container="body">
+      ⚠️
+    </span>
+  </ng-container>
+
+  <ng-template #semErro>-</ng-template>
+</td>
             </tr>
           </tbody>
         </table>
@@ -187,7 +202,7 @@
             </div>
           </div>
 
-          <div class="col-md-4">
+          <div class="col-md-4" *ngIf="!isEstorno">
             <label class="form-label">Quantia</label>
             <input type="text" class="form-control" formControlName="quantia" mask="separator.2" thousandSeparator="."
               decimalMarker="," />

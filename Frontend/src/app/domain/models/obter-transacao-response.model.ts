@@ -7,4 +7,5 @@ export interface ObterTransacaoResponse {
   transacaoEstornadaId?: number | null;
   contaDestinoId?: number | null;
   nomeClienteContaDestino?: string | null;
+  mensagemErro?: string | null;
 }

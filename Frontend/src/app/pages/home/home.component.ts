@@ -1,7 +1,7 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, TemplateRef, ViewChild, inject } from '@angular/core';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { NgbModal, NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgbModal, NgbModalModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
 
 import { ContaService } from '../../domain/services/conta.service';
 import { TransacaoService } from '../../domain/services/transacao.service';
@@ -16,7 +16,7 @@ import { LoadingService } from '../../core/services/loading.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ApiErrorHelper } from '../../core/helpers/api-error.helper';
 import { ObterContaParaTransferenciaResponse } from '../../domain/models/obter-conta-para-transferencia-response.model';
-import { NgxMaskDirective, NgxMaskPipe } from 'ngx-mask';
+import { NgxMaskDirective } from 'ngx-mask';
 enum TipoOperacaoEnum {
   Credito = 1,
   Debito = 2,
@@ -29,7 +29,7 @@ enum TipoOperacaoEnum {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModalModule, NgxMaskDirective, CurrencyPipe],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModalModule, NgxMaskDirective, CurrencyPipe, NgbTooltipModule],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })

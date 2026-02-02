@@ -5,6 +5,6 @@ namespace Domain.Interfaces.Services
 {
     public interface IProcessadorTransacaoDomainService
     {
-        DomainPatternGeneric<Transacao?> Processar(Transacao transacao);
+        DomainPattern Processar(Transacao transacao);
     }
 }

@@ -7,7 +7,7 @@ namespace Domain.Services
 {
     public sealed class ProcessadorTransacaoDomainService : IProcessadorTransacaoDomainService
     {
-        public DomainPatternGeneric<Transacao?> Processar(Transacao transacao)
+        public DomainPattern Processar(Transacao transacao)
         {
             var erros = new List<string>();
 
@@ -27,7 +27,7 @@ namespace Domain.Services
         }
 
 
-        private DomainPatternGeneric<Transacao?> ProcessarCredito(Transacao t)
+        private DomainPattern ProcessarCredito(Transacao t)
         {
             if (t.ContaOrigem is null)
                 return Erro(t, "Conta origem é obrigatória para crédito");
@@ -35,10 +35,10 @@ namespace Domain.Services
             t.ContaOrigem.SaldoDisponivel += t.Quantia;
             MarcarSucesso(t);
 
-            return DomainPatternGeneric<Transacao?>.SucessoBuilder(null);
+            return DomainPattern.SucessoBuilder();
         }
 
-        private DomainPatternGeneric<Transacao?> ProcessarDebito(Transacao t)
+        private DomainPattern ProcessarDebito(Transacao t)
         {
             if (t.ContaOrigem is null)
                 return Erro(t, "Conta origem é obrigatória para débito");
@@ -51,10 +51,10 @@ namespace Domain.Services
             t.ContaOrigem.SaldoDisponivel = novoSaldo;
             MarcarSucesso(t);
 
-            return DomainPatternGeneric<Transacao?>.SucessoBuilder(null);
+            return DomainPattern.SucessoBuilder();
         }
 
-        private DomainPatternGeneric<Transacao?> ProcessarReserva(Transacao t)
+        private DomainPattern ProcessarReserva(Transacao t)
         {
             if (t.ContaOrigem is null)
                 return Erro(t, "Conta origem é obrigatória para reserva");
@@ -66,10 +66,10 @@ namespace Domain.Services
             t.ContaOrigem.SaldoReservado += t.Quantia;
             MarcarSucesso(t);
 
-            return DomainPatternGeneric<Transacao?>.SucessoBuilder(null);
+            return DomainPattern.SucessoBuilder();
         }
 
-        private DomainPatternGeneric<Transacao?> ProcessarCaptura(Transacao t)
+        private DomainPattern ProcessarCaptura(Transacao t)
         {
             if (t.ContaOrigem is null)
                 return Erro(t, "Conta origem é obrigatória para captura");
@@ -81,10 +81,10 @@ namespace Domain.Services
 
             MarcarSucesso(t);
 
-            return DomainPatternGeneric<Transacao?>.SucessoBuilder(null);
+            return DomainPattern.SucessoBuilder();
         }
 
-        private DomainPatternGeneric<Transacao?> ProcessarTransferencia(Transacao t)
+        private DomainPattern ProcessarTransferencia(Transacao t)
         {
             if (t.ContaOrigem is null || t.ContaDestino is null)
                 return Erro(t, "Conta origem e destino são obrigatórias para transferência");
@@ -98,14 +98,14 @@ namespace Domain.Services
             t.ContaDestino.SaldoDisponivel += t.Quantia;
 
             MarcarSucesso(t);
-            return DomainPatternGeneric<Transacao?>.SucessoBuilder(null);
+            return DomainPattern.SucessoBuilder();
         }
 
         // =========================
         // ESTORNO
         // =========================
 
-        private DomainPatternGeneric<Transacao?> ProcessarEstorno(Transacao solicitacao)
+        private DomainPattern ProcessarEstorno(Transacao solicitacao)
         {
             var original = solicitacao.TransacaoEstornada;
 
@@ -115,22 +115,20 @@ namespace Domain.Services
             if (original.Status != StatusTransacaoEnum.SUCESSO)
                 return Erro(solicitacao, "Apenas transações com sucesso podem ser estornadas");
 
-            var estorno = CriarTransacaoEstorno(solicitacao, original);
 
-            var resultado = AplicarEstorno(estorno, original);
+            var resultado = AplicarEstorno(original);
 
             if (!resultado.Sucesso)
             {
                 return Erro(solicitacao, resultado.Erros);
             }
 
-            MarcarSucesso(estorno);
             MarcarSucesso(solicitacao);
 
-            return DomainPatternGeneric<Transacao?>.SucessoBuilder(estorno);
+            return DomainPattern.SucessoBuilder();
         }
 
-        private DomainPatternGeneric<Transacao?> AplicarEstorno(Transacao estorno, Transacao original)
+        private DomainPattern AplicarEstorno(Transacao original)
         {
 
             switch (original.Tipo)
@@ -182,26 +180,7 @@ namespace Domain.Services
                     return ErroBuilderSemMutacao("Tipo de transação não suportado para estorno.");
             }
 
-            return DomainPatternGeneric<Transacao?>.SucessoBuilder(null);
-        }
-
-
-        private static Transacao CriarTransacaoEstorno(Transacao solicitacao, Transacao original)
-        {
-            return new Transacao
-            {
-                Tipo = TipoOperacaoEnum.Estorno,
-                Status = StatusTransacaoEnum.PENDENTE,
-                Quantia = original.Quantia,
-                Moeda = original.Moeda,
-                ContaOrigem = original.ContaOrigem,
-                ContaDestino = original.ContaDestino,
-                ContaOrigemId = original.ContaOrigemId,
-                ContaDestinoId = original.ContaDestinoId,
-                TransacaoEstornada = original,
-                TransacaoEstornadaId = original.Id,
-                MetadataJson = solicitacao.MetadataJson
-            };
+            return DomainPattern.SucessoBuilder();
         }
 
         private static bool ValidarBasico(Transacao t, List<string> erros)
@@ -238,14 +217,14 @@ namespace Domain.Services
             t.MensagemErro = msg;
         }
 
-        private static DomainPatternGeneric<Transacao?> Erro(Transacao t, string erro)
+        private static DomainPattern Erro(Transacao t, string erro)
         {
             var erros = new List<string> { erro };
             MarcarFalha(t, erros);
-            return DomainPatternGeneric<Transacao?>.ErroBuilder(erros);
+            return DomainPattern.ErroBuilder(erros);
         }
 
-        private static DomainPatternGeneric<Transacao?> Erro(Transacao t, List<string> erros)
+        private static DomainPattern Erro(Transacao t, List<string> erros)
         {
             var errosValidos = erros
                 .Where(e => !string.IsNullOrWhiteSpace(e))
@@ -255,10 +234,10 @@ namespace Domain.Services
                 errosValidos.Add("Falha desconhecida.");
 
             MarcarFalha(t, errosValidos);
-            return DomainPatternGeneric<Transacao?>.ErroBuilder(errosValidos);
+            return DomainPattern.ErroBuilder(errosValidos);
         }
 
-        private static DomainPatternGeneric<Transacao?> ErroBuilderSemMutacao(string erro)
-            => DomainPatternGeneric<Transacao?>.ErroBuilder(erro);
+        private static DomainPattern ErroBuilderSemMutacao(string erro)
+            => DomainPattern.ErroBuilder(erro);
     }
 }

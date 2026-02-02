@@ -14,6 +14,8 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using Infraestrutura.Messaging.RabbitMq;
 using WebApi.Extensions;
+using Domain.Interfaces.Repositories;
+using Infraestrutura.EntityFramework.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,10 +53,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddScoped<IContaService, ContaService>();
 builder.Services.AddScoped<ITransacaoService, TransacaoService>();
+builder.Services.AddScoped<ITransacaoRepository, TransacaoRepository>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
 
-// EF
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
