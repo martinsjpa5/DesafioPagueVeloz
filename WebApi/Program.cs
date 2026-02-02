@@ -16,6 +16,7 @@ using Infraestrutura.Messaging.RabbitMq;
 using WebApi.Extensions;
 using Domain.Interfaces.Repositories;
 using Infraestrutura.EntityFramework.Repositories;
+using Infraestrutura.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,8 +55,22 @@ builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddScoped<IContaService, ContaService>();
 builder.Services.AddScoped<ITransacaoService, TransacaoService>();
 builder.Services.AddScoped<ITransacaoRepository, TransacaoRepository>();
+
+builder.Services.AddSingleton<ICommonCachingRepository, CommonCachingRepository>();
+
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
+
+
+var redisConnection = builder.Configuration.GetSection("RedisConnection").Get<RedisConnectionSettings>() ?? new RedisConnectionSettings();
+
+
+
+builder.Services.AddStackExchangeRedisCache(o =>
+{
+    o.InstanceName = redisConnection.InstanceName;
+    o.Configuration = redisConnection.Configuration;
+});
 
 
 builder.Services.AddDbContext<AppDbContext>(options =>
