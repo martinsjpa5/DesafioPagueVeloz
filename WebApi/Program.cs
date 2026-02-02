@@ -1,17 +1,8 @@
-using Application.Dtos.Base;
 using Application.Interfaces.Context;
 using Application.Interfaces.Services;
 using Application.Services;
-using Infraestrutura.EntidadeBaseFramework.Repositories;
 using Infraestrutura.EntityFramework;
 using Infraestrutura.EntityFramework.Context;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
-using System.Text;
 using Infraestrutura.Messaging.RabbitMq;
 using WebApi.Extensions;
 using Domain.Interfaces.Repositories;
@@ -22,34 +13,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Minha API", Version = "v1" });
+builder.Services.AddSwaggerDocumentation();
 
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Informe: Bearer {seu_token}"
-    });
+builder.Services.AddApiBehavior();
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
-            },
-            Array.Empty<string>()
-        }
-    });
-});
+builder.Services.AddIdentityConfiguration();
 
-builder.Services.AddScoped<IEfBaseRepository, EfBaseRepository>();
+builder.Services.AddJwtAuthentication(builder.Configuration);
+
+builder.Services.AddAuthorization();
+
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserContext, UserContext>();
 builder.Services.AddScoped<IContaService, ContaService>();
@@ -58,116 +33,32 @@ builder.Services.AddScoped<ITransacaoRepository, TransacaoRepository>();
 
 builder.Services.AddSingleton<ICommonCachingRepository, CommonCachingRepository>();
 
-builder.Services.AddHttpContextAccessor();
 builder.Services.AddRabbitMqMessaging(builder.Configuration);
-
-
-var redisConnection = builder.Configuration.GetSection("RedisConnection").Get<RedisConnectionSettings>() ?? new RedisConnectionSettings();
-
-
-
-builder.Services.AddStackExchangeRedisCache(o =>
-{
-    o.InstanceName = redisConnection.InstanceName;
-    o.Configuration = redisConnection.Configuration;
-});
-
-
-builder.Services.AddDbContext<AppDbContext>(options =>
-{
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
-});
-
-builder.Services.Configure<ApiBehaviorOptions>(options =>
-{
-    options.SuppressModelStateInvalidFilter = false;
-    options.InvalidModelStateResponseFactory = context =>
-    {
-        var erros = context.ModelState.Values.SelectMany(e => e.Errors);
-        var errosResult = erros.Select(x => x.ErrorMessage).ToList();
-
-        return new UnprocessableEntityObjectResult(ResultPattern.ErroBuilder(errosResult));
-    };
-});
+builder.Services.AddEntityFrameworkSql(builder.Configuration);
+builder.Services.AddRedis(builder.Configuration);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        policy =>
-        {
-            policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        });
-});
-
-builder.Services
-    .AddIdentityCore<ApplicationUser>(options =>
+    options.AddPolicy("AllowAll", policy =>
     {
-        options.Password.RequiredLength = 8;
-        options.Password.RequireDigit = false;
-        options.Password.RequireLowercase = false;
-        options.Password.RequireUppercase = false;
-        options.Password.RequireNonAlphanumeric = false;
-        options.User.RequireUniqueEmail = true;
-    })
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();
-
-var jwtSection = builder.Configuration.GetSection("Jwt");
-var jwtKey = jwtSection["Key"]!;
-var jwtIssuer = jwtSection["Issuer"]!;
-var jwtAudience = jwtSection["Audience"]!;
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = true;
-    options.SaveToken = true;
-
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidIssuer = jwtIssuer,
-
-        ValidateAudience = true,
-        ValidAudience = jwtAudience,
-
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-
-        ValidateLifetime = true,
-        ClockSkew = TimeSpan.FromSeconds(30)
-    };
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
 });
-
-builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+app.UseSwaggerDocumentation();
+
 using (var scope = app.Services.CreateScope())
 {
-
-    var services = scope.ServiceProvider;
-
-    var db = services.GetRequiredService<AppDbContext>();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.EnsureCreated();
 }
 
-if (true)
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Minha API v1");
-        c.RoutePrefix = "";
-    });
-}
+
+app.UseMiddleware<ExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 
