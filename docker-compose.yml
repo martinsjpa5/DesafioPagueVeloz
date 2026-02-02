@@ -20,6 +20,7 @@ services:
     depends_on:
       - rabbitmq
       - sqlserver
+      - redis
 
   workertransacao:
     build:
@@ -36,6 +37,7 @@ services:
     depends_on:
       - sqlserver
       - rabbitmq
+      - redis
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -65,4 +67,9 @@ services:
       - "4200:80"
     depends_on:
       - webapi
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
 

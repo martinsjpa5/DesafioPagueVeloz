@@ -9,5 +9,6 @@ namespace Application.Interfaces.Services
         Task<ResultPattern> RegistrarPorUsuarioLogadoAsync(RegistrarContaRequest request);
         Task<ResultPatternGeneric<ObterClienteResponse>> ObterPorUsuarioLogadoAsync();
         Task<ResultPatternGeneric<IEnumerable<ObterContaParaTransferenciaResponse>>> ObterContasParaTransferenciaAsync(int contaId);
+        Task<ResultPatternGeneric<ObterContaResponse>> ObterPorIdUsuarioLogadoAsync(int contaId);
     }
 }

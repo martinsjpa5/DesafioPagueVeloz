@@ -40,29 +40,6 @@ namespace Infraestrutura.EntidadeBaseFramework.Repositories
             return true;
         }
 
-        public bool RastrearEntidadeBases<T>(ICollection<T> EntidadeBases) where T : EntidadeBase
-        {
-            _dataContext.AttachRange(EntidadeBases);
-            return true;
-        }
-
-        public async Task<ICollection<T>> ObterTodosAsync<T>() where T : EntidadeBase
-        {
-            var result = await _dataContext.Set<T>().ToListAsync();
-
-            return result;
-        }
-        public async Task<T?> ObterPorIdAsync<T>(int id) where T : EntidadeBase
-        {
-            var result = await _dataContext.Set<T>().FirstOrDefaultAsync(x => x.Id == id);
-            return result;
-        }
-
-        public async Task<ICollection<T>> ObterPorIdsAsync<T>(ICollection<int> ids) where T : EntidadeBase
-        {
-            var result = await _dataContext.Set<T>().Where(x => ids.Contains(x.Id)).ToListAsync();
-            return result;
-        }
 
         public async Task<T?> ObterPorCondicaoAsync<T>(Expression<Func<T, bool>> predicate) where T : EntidadeBase
         {
@@ -108,19 +85,6 @@ namespace Infraestrutura.EntidadeBaseFramework.Repositories
             }
 
             var result = await query.ToListAsync();
-            return result;
-        }
-
-        public async Task<T?> ObterPorIdAsync<T>(int id, params Func<IQueryable<T>, IIncludableQueryable<T, object>>[] includes) where T : EntidadeBase
-        {
-            var query = _dataContext.Set<T>().AsQueryable();
-
-            foreach (var include in includes)
-            {
-                query = include(query);
-            }
-
-            var result = await query.FirstOrDefaultAsync(x => x.Id == id);
             return result;
         }
 

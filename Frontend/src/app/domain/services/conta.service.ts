@@ -8,6 +8,7 @@ import { ObterTransacaoResponse } from '../models/obter-transacao-response.model
 import { RegistrarContaRequest } from '../models/registrar-conta-request.model';
 import { ObterClienteResponse } from '../models/obter-cliente-response.model';
 import { ObterContaParaTransferenciaResponse } from '../models/obter-conta-para-transferencia-response.model';
+import { ObterContaResponse } from '../models/obter-conta-response.model';
 
 @Injectable({
   providedIn: 'root'
@@ -26,6 +27,9 @@ export class ContaService {
 
   async Obter(): Promise<ApiGenericResponse<ObterClienteResponse>> {
     return await firstValueFrom(this.http.get<ApiGenericResponse<ObterClienteResponse>>(this.apiUrl));
+  }
+  async ObterPorId(contaId: number): Promise<ApiGenericResponse<ObterContaResponse>> {
+    return await firstValueFrom(this.http.get<ApiGenericResponse<ObterContaResponse>>(this.apiUrl + "/" + contaId));
   }
   async ObterParaTransferencia(contaId: number): Promise<ApiGenericResponse<ObterContaParaTransferenciaResponse[]>> {
     return await firstValueFrom(this.http.get<ApiGenericResponse<ObterContaParaTransferenciaResponse[]>>(this.apiUrl + "/contasParaTransferencia/" + contaId));

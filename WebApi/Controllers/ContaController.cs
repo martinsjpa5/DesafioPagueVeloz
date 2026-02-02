@@ -36,6 +36,14 @@ namespace WebApi.Controllers
             return CustomResponse(result);
         }
 
+        [HttpGet("{contaId}")]
+        public async Task<ActionResult<ResultPatternGeneric<ObterContaResponse>>> ObterPorUsuarioLogadoAsync(int contaId)
+        {
+            var result = await _contaService.ObterPorIdUsuarioLogadoAsync(contaId);
+
+            return CustomResponse(result);
+        }
+
         [HttpGet("contasParaTransferencia/{id}")]
         public async Task<ActionResult<ResultPatternGeneric<IEnumerable<ObterContaParaTransferenciaResponse>>>> ObterContasParaTransferenciaAsync(int id)
         {

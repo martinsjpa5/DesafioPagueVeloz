@@ -47,8 +47,10 @@ export class HomeComponent {
 
   cliente: ObterClienteResponse | null = null;
 
-  contas: ObterContaResponse[] = [];
+  contas: number[] = [];              // agora só IDs
   contaSelecionadaId: number | null = null;
+
+  contaSelecionadaDetalhe: ObterContaResponse | null = null;
 
   transacoes: ObterTransacaoResponse[] = [];
 
@@ -73,8 +75,7 @@ export class HomeComponent {
   ];
 
   get contaSelecionada(): ObterContaResponse | null {
-    if (!this.contaSelecionadaId) return null;
-    return this.contas.find(c => c.id === this.contaSelecionadaId) ?? null;
+    return this.contaSelecionadaDetalhe;
   }
 
   get operacaoAtual(): number {
@@ -201,24 +202,19 @@ export class HomeComponent {
       const resp = await this.contaService.Obter();
       this.cliente = resp?.data ?? null;
 
-      const contasDoCliente: any[] = (resp?.data as any)?.contas ?? [];
+      this.contas = this.cliente?.contas ?? [];
 
-      this.contas = contasDoCliente.map((c) => ({
-        id: c.id,
-        nomeCliente: c.nomeCliente ?? c.nome ?? '',
-        saldoDisponivel: this.normalizeNumber(c.saldoDisponivel),
-        saldoReservado: this.normalizeNumber(c.saldoReservado),
-        limiteDeCredito: this.normalizeNumber(c.limiteDeCredito),
-        status: c.status ?? '',
-      }));
-
-      if (this.contaSelecionadaId && !this.contas.some(x => x.id === this.contaSelecionadaId)) {
+      // se a conta selecionada não existir mais, limpa
+      if (this.contaSelecionadaId && !this.contas.includes(this.contaSelecionadaId)) {
         this.contaSelecionadaId = null;
+        this.contaSelecionadaDetalhe = null;
         this.transacoes = [];
       }
     } catch (error) {
       this.cliente = null;
       this.contas = [];
+      this.contaSelecionadaId = null;
+      this.contaSelecionadaDetalhe = null;
       this.transacoes = [];
       this.toastService.error(ApiErrorHelper.getApiErrorMessage(error));
     } finally {
@@ -228,12 +224,29 @@ export class HomeComponent {
 
   async onSelecionarConta(): Promise<void> {
     if (!this.contaSelecionadaId) {
+      this.contaSelecionadaDetalhe = null;
       this.transacoes = [];
       return;
     }
 
+    await this.carregarContaSelecionada(this.contaSelecionadaId);
     await this.carregarTransacoes(this.contaSelecionadaId);
   }
+
+  async carregarContaSelecionada(contaId: number): Promise<void> {
+    this.loadingService.show();
+
+    try {
+      const resp = await this.contaService.ObterPorId(contaId);
+      this.contaSelecionadaDetalhe = resp?.data ?? null;
+    } catch (error) {
+      this.contaSelecionadaDetalhe = null;
+      this.toastService.error(ApiErrorHelper.getApiErrorMessage(error));
+    } finally {
+      this.loadingService.hide();
+    }
+  }
+
 
   async carregarTransacoes(contaId: number): Promise<void> {
     this.loadingService.show();
@@ -307,40 +320,36 @@ export class HomeComponent {
    * ✅ Atualiza saldo/status e transações (se tiver conta selecionada)
    * + atualiza listas do modal (transferência/estorno) se aplicável
    */
-  async atualizarDados(toast:boolean =  false): Promise<void> {
+  async atualizarDados(toast: boolean = false): Promise<void> {
     if (this.isRefreshing) return;
 
     this.isRefreshing = true;
     this.loadingService.show();
 
     try {
-      // Atualiza contas
+      // Atualiza cliente + ids das contas
       const resp = await this.contaService.Obter();
       this.cliente = resp?.data ?? null;
-
-      const contasDoCliente: any[] = (resp?.data as any)?.contas ?? [];
-      this.contas = contasDoCliente.map((c) => ({
-        id: c.id,
-        nomeCliente: c.nomeCliente ?? c.nome ?? '',
-        saldoDisponivel: this.normalizeNumber(c.saldoDisponivel),
-        saldoReservado: this.normalizeNumber(c.saldoReservado),
-        limiteDeCredito: this.normalizeNumber(c.limiteDeCredito),
-        status: c.status ?? '',
-      }));
+      this.contas = this.cliente?.contas ?? [];
 
       // Se a selecionada sumiu
-      if (this.contaSelecionadaId && !this.contas.some(x => x.id === this.contaSelecionadaId)) {
+      if (this.contaSelecionadaId && !this.contas.includes(this.contaSelecionadaId)) {
         this.contaSelecionadaId = null;
+        this.contaSelecionadaDetalhe = null;
         this.transacoes = [];
-        this.toastService.success('Dados atualizados!');
+        if (toast) this.toastService.success('Dados atualizados!');
         return;
       }
 
-      // Atualiza transações
+      // Atualiza detalhe da conta selecionada
       if (this.contaSelecionadaId) {
+        const contaResp = await this.contaService.ObterPorId(this.contaSelecionadaId);
+        this.contaSelecionadaDetalhe = contaResp?.data ?? null;
+
         const txResp = await this.transacaoService.ObterTransacoes(this.contaSelecionadaId);
         this.transacoes = txResp?.data ?? [];
       } else {
+        this.contaSelecionadaDetalhe = null;
         this.transacoes = [];
       }
 
@@ -352,9 +361,7 @@ export class HomeComponent {
         await this.carregarTransacoesPassiveisDeEstorno();
       }
 
-      if(toast){
-        this.toastService.success('Dados atualizados!');
-      }
+      if (toast) this.toastService.success('Dados atualizados!');
     } catch (error) {
       this.toastService.error(ApiErrorHelper.getApiErrorMessage(error));
     } finally {

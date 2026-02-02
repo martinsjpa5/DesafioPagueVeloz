@@ -6,6 +6,8 @@ using Application.Interfaces.Context;
 using Application.Interfaces.Services;
 using Domain.Entities;
 using Domain.Enums;
+using Domain.Interfaces.Repositories;
+using Domain.Models;
 using Infraestrutura.EntidadeBaseFramework.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,11 +17,13 @@ namespace Application.Services
     {
         private readonly IEfBaseRepository _efBaseRepository;
         private readonly IUserContext _userContext;
+        private readonly ICommonCachingRepository _commonCachingRepository;
 
-        public ContaService(IEfBaseRepository efBaseRepository, IUserContext userContext)
+        public ContaService(IEfBaseRepository efBaseRepository, IUserContext userContext, ICommonCachingRepository commonCachingRepository)
         {
             _efBaseRepository = efBaseRepository;
             _userContext = userContext;
+            _commonCachingRepository = commonCachingRepository;
         }
 
         public async Task<ResultPatternGeneric<IEnumerable<ObterContaParaTransferenciaResponse>>> ObterContasParaTransferenciaAsync(int contaId)
@@ -38,21 +42,54 @@ namespace Application.Services
 
         public async Task<ResultPatternGeneric<ObterClienteResponse>> ObterPorUsuarioLogadoAsync()
         {
-            ICollection<Conta> contas = await _efBaseRepository.ObterTodosPorCondicaoAsync<Conta>(conta => conta.ClienteId == _userContext.ClienteId);
-            Cliente? cliente = await _efBaseRepository.ObterPorCondicaoAsync<Cliente>(cliente => cliente.Id == _userContext.ClienteId);
+            ICollection<Conta> contas = await _efBaseRepository.ObterTodosPorCondicaoAsync<Conta>(conta => conta.ClienteId == _userContext.ClienteId, conta => conta.Include(x => x.Cliente));
 
-            IEnumerable<ObterContaResponse> contaResponse = contas.Select(conta => new ObterContaResponse
-            {
-                Id = conta.Id,
-                LimiteDeCredito = conta.LimiteDeCredito,
-                SaldoDisponivel = conta.SaldoDisponivel,
-                SaldoReservado = conta.SaldoReservado,
-                Status = conta.Status.ToString()
-            });
-
-            ObterClienteResponse clienteResponse = new() { Nome = cliente.Nome, Contas = contaResponse };
+            ObterClienteResponse clienteResponse = new() { Nome = contas.FirstOrDefault()?.Cliente.Nome, Contas = contas.Select(x => x.Id).ToList() };
 
             return ResultPatternGeneric<ObterClienteResponse>.SucessoBuilder(clienteResponse);
+        }
+
+        public async Task<ResultPatternGeneric<ObterContaResponse>> ObterPorIdUsuarioLogadoAsync(int contaId)
+        {
+            ContaModel? contaCache = new() { ClienteId = _userContext.ClienteId, ContaId = contaId };
+
+            contaCache = await _commonCachingRepository.GetAsync<ContaModel>(contaCache.ObterKey());
+
+            Conta? conta = null;
+
+            if (contaCache == null)
+            {
+                conta = await _efBaseRepository.ObterPorCondicaoAsync<Conta>(conta => conta.ClienteId == _userContext.ClienteId && conta.Id == contaId);
+
+                if (conta == null)
+                {
+                    return ResultPatternGeneric<ObterContaResponse>.ErroBuilder("Conta não Encontrada!");
+                }
+
+                contaCache = new()
+                {
+                    ClienteId = _userContext.ClienteId,
+                    ContaId = contaId,
+                    LimiteDeCredito = conta.LimiteDeCredito,
+                    SaldoDisponivel = conta.SaldoDisponivel,
+                    SaldoReservado = conta.SaldoReservado,
+                    Status = conta.Status.ToString()
+                };
+
+                await _commonCachingRepository.SetAsync(contaCache, TimeSpan.FromDays(1));
+            }
+
+            ObterContaResponse response = new()
+            {
+                Id = contaId,
+                LimiteDeCredito = contaCache.LimiteDeCredito,
+                SaldoDisponivel = contaCache.SaldoDisponivel,
+                SaldoReservado = contaCache.SaldoReservado,
+                Status = contaCache.Status
+            };
+
+            return ResultPatternGeneric<ObterContaResponse>.SucessoBuilder(response);
+
         }
 
         public async Task<ResultPattern> RegistrarPorUsuarioLogadoAsync(RegistrarContaRequest request)

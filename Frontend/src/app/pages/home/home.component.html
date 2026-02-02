@@ -3,6 +3,9 @@
   <!-- Top actions -->
   <div class="d-flex justify-content-between align-items-center mb-3">
     <div class="fw-semibold">Painel</div>
+    <div class="text-muted small" *ngIf="cliente as cl">
+      Cliente: <strong>{{ cl.nome }}</strong>
+    </div>
 
     <button type="button" class="btn btn-outline-secondary" (click)="atualizarDados(true)" [disabled]="isRefreshing">
       Atualizar
@@ -18,8 +21,8 @@
         <select class="form-select" name="contaSelecionadaId" [(ngModel)]="contaSelecionadaId"
           (change)="onSelecionarConta()">
           <option [ngValue]="null">Selecione...</option>
-          <option *ngFor="let c of contas" [ngValue]="c.id">
-            {{ c.id }} - {{ cliente?.nome }}
+          <option *ngFor="let id of contas" [ngValue]="id">
+            {{ id }}
           </option>
         </select>
 
@@ -113,19 +116,14 @@
               <td>{{ t.contaDestinoId ?? '-' }}</td>
               <td>{{ t.nomeClienteContaDestino ?? '-' }}</td>
               <td class="text-center">
-  <ng-container *ngIf="t.mensagemErro as err; else semErro">
-    <span
-      class="text-danger"
-      style="cursor: help;"
-      [ngbTooltip]="err"
-      placement="top"
-      container="body">
-      ⚠️
-    </span>
-  </ng-container>
+                <ng-container *ngIf="t.mensagemErro as err; else semErro">
+                  <span class="text-danger" style="cursor: help;" [ngbTooltip]="err" placement="top" container="body">
+                    ⚠️
+                  </span>
+                </ng-container>
 
-  <ng-template #semErro>-</ng-template>
-</td>
+                <ng-template #semErro>-</ng-template>
+              </td>
             </tr>
           </tbody>
         </table>

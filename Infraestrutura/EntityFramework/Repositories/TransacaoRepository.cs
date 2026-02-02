@@ -17,7 +17,15 @@ namespace Infraestrutura.EntityFramework.Repositories
 
         public async Task<Transacao?> ObterTransacaoPendenteAsync(int id)
         {
-            var result = await _dataContext.Set<Transacao>().Where(x => x.Id == id && x.Status == Domain.Enums.StatusTransacaoEnum.PENDENTE).Include(x => x.ContaOrigem).Include(x => x.ContaDestino).Include(x => x.TransacaoEstornada).AsTracking().FirstOrDefaultAsync();
+            var result = await _dataContext.Set<Transacao>()
+                .Where(x => x.Id == id && x.Status == Domain.Enums.StatusTransacaoEnum.PENDENTE)
+                .Include(x => x.ContaOrigem)
+                .ThenInclude(x => x.Cliente)
+                .Include(x => x.ContaDestino)
+                .ThenInclude(x => x.Cliente)
+                .Include(x => x.TransacaoEstornada)
+                .AsTracking()
+                .FirstOrDefaultAsync();
 
             return result;
         }
