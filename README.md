@@ -1,273 +1,263 @@
-# Core Financeiro — WebApi + Worker + Mensageria (RabbitMQ) + Cache (Redis)
+# 💳 Sistema de Transações Financeiras – API & Worker Assíncrono
 
 ## 📌 Visão Geral
 
-Este projeto implementa um **core financeiro orientado a eventos**, com processamento assíncrono de transações, separação clara de responsabilidades e foco em **consistência eventual**, **escalabilidade** e **qualidade de código**.
+Este projeto implementa uma **plataforma de transações financeiras** com foco em **robustez, escalabilidade, consistência e boas práticas de mercado**, utilizando uma arquitetura baseada em **DDD (Domain-Driven Design) + Clean Architecture** e processamento **assíncrono orientado a eventos**.
 
-Ele simula cenários reais encontrados em sistemas financeiros, como:
-- processamento assíncrono de operações
-- controle de concorrência
-- estorno como operação compensatória
-- cache de leitura
-- sharding de filas
-- observabilidade e testes automatizados
-
-O projeto é totalmente executável via **Docker Compose**.
+A solução suporta operações financeiras críticas como **Crédito, Débito, Reserva, Captura, Transferência e Estorno**, garantindo:
+- Regras de negócio explícitas e centralizadas no domínio
+- Processamento resiliente e escalável
+- Consistência eventual
+- Invalidação de cache orientada a eventos
+- Observabilidade por `correlationId`
 
 ---
 
 ## 🧱 Arquitetura
 
-### Componentes
-
-| Componente | Responsabilidade |
-|----------|------------------|
-| **WebApi** | Exposição de endpoints REST, autenticação JWT, criação de transações |
-| **WorkerTransacao** | Processamento assíncrono das transações |
-| **RabbitMQ** | Transporte de eventos e desacoplamento |
-| **SQL Server** | Persistência relacional |
-| **Redis** | Cache de leitura de contas |
-| **Frontend (Angular)** | Interface do usuário |
-
 ### Estilo Arquitetural
-- Arquitetura em camadas
-- Event-driven
-- Consistência eventual
-- Escalabilidade horizontal via sharding
+- Clean Architecture
+- Domain-Driven Design (DDD)
+- Event-Driven Architecture
+
+### Separação de Camadas
+
+- **Domain**
+  - Entidades
+  - Enums
+  - Serviços de domínio
+  - Regras de negócio puras
+
+- **Application**
+  - Casos de uso
+  - Orquestração
+  - Validações
+  - Publicação de eventos
+
+- **Infraestrutura**
+  - Entity Framework Core
+  - RabbitMQ
+  - Redis
+  - Implementações técnicas
+
+- **WebApi**
+  - Controllers
+  - Autenticação
+  - Autorização
+  - Swagger
+  - Health Checks
+
+- **WorkerTransacao**
+  - Consumers RabbitMQ
+  - Processamento assíncrono
+  - Invalidação de cache
 
 ---
 
-## 🧠 Modelo de Domínio
+## 🧩 Componentes Principais
 
-### Entidades Principais
+### Web API
 
-#### Cliente
-- Representa o tenant/dono das contas
+Responsável por:
+- Autenticação de usuários
+- Emissão de JWT
+- Cadastro de clientes e contas
+- Criação de transações
+- Consultas de contas e transações
 
-#### Conta
-- `SaldoDisponivel`
-- `SaldoReservado`
-- `LimiteDeCredito`
-- `Status`
-- `RowVersion` (controle de concorrência otimista)
-- `ClienteId`
-
-#### Transacao
-- Criada com `Status = PENDENTE`
-- Processada pelo worker
-- Estados possíveis:
-  - `PENDENTE`
-  - `SUCESSO`
-  - `FALHA`
-- Tipos:
-  - Crédito
-  - Débito
-  - Reserva
-  - Captura
-  - Transferência
-  - Estorno
+Tecnologias:
+- ASP.NET Core
+- Identity Core
+- JWT Bearer
+- Swagger
+- EF Core
+- Redis
+- RabbitMQ (Publisher)
 
 ---
 
-## 🔄 Fluxo de Transação (End-to-End)
+### Worker de Transações
 
-### 1️⃣ Criação (WebApi)
-1. Cliente chama `POST /Transacao`
-2. API valida regras de entrada
-3. Cria transação com status `PENDENTE`
-4. Persiste no banco
-5. Publica evento `TransacaoCriadaEvent` no RabbitMQ
-6. Retorna resposta imediatamente
+Responsável por:
+- Consumir eventos de transações criadas
+- Processar regras de negócio no domínio
+- Atualizar saldos das contas
+- Invalidar cache Redis
+- Garantir idempotência e resiliência
 
-### 2️⃣ Processamento (Worker)
-1. Worker consome evento da fila
-2. Carrega transação pendente
-3. Executa regras do domínio
-4. Atualiza saldos e status
-5. Persiste alterações
-6. Invalida cache Redis (se sucesso)
-
----
-
-## 📬 Mensageria e Sharding
-
-- Exchange: `transacoes.exchange`
-- Routing key base: `transacoes`
-- Routing final: `transacoes.shard-{n}`
-
-O shard é calculado com base no `ClienteId`, permitindo:
-- paralelismo controlado
-- redução de contenção
-- escalabilidade previsível
-
----
-
-## ⚡ Cache (Redis)
-
-- Estratégia: **Cache-Aside**
-- Cache aplicado apenas para leitura de contas
-- TTL: **1 dia**
-- Invalidação automática após transação processada com sucesso
-
-➡️ Garante leitura rápida com **consistência eventual**.
+Tecnologias:
+- .NET Worker Service
+- RabbitMQ (Consumer Sharded)
+- EF Core
+- Redis
 
 ---
 
 ## 🔐 Segurança
 
-### Autenticação
-- JWT Bearer Token
+- Autenticação via **JWT Bearer**
+- Tokens assinados com **HMAC SHA256**
 - Claims:
-  - `sub` (email)
-  - `jti`
-  - `clienteId`
-
-### Autorização
+  - `sub` → email do usuário
+  - `clienteId` → identificação do cliente
 - Endpoints protegidos com `[Authorize]`
-- Escopo garantido por `clienteId` via `IUserContext`
+- Contexto do usuário acessado via `IUserContext`
 
 ---
 
-## 📡 API — Endpoints
+## 🔁 Fluxo de Processamento de Transação
 
-### Auth
-- `POST /Auth/Registrar`
-- `POST /Auth/Logar`
-
-### Conta (JWT obrigatório)
-- `POST /Conta/Registrar`
-- `GET /Conta`
-- `GET /Conta/{contaId}`
-- `GET /Conta/contasParaTransferencia/{id}`
-
-### Transação (JWT obrigatório)
-- `POST /Transacao`
-- `GET /Transacao/conta/{contaId}`
-- `GET /Transacao/passiveisDeEstorno/conta/{contaId}`
+```text
+Cliente
+  ↓
+Web API
+  ↓
+Validações iniciais
+  ↓
+Criação da Transação (Status = PENDENTE)
+  ↓
+Publicação de Evento (RabbitMQ)
+  ↓
+Worker consome evento
+  ↓
+Processamento no Domínio
+  ↓
+Atualização de saldos
+  ↓
+Invalidação de cache
+```
 
 ---
 
-## 🧾 Swagger / OpenAPI
+## 📬 Mensageria (RabbitMQ)
 
-- Swagger habilitado
-- Suporte a JWT Bearer Token
-- Acessível na raiz da aplicação:
-  ```
-  http://localhost:8080
-  ```
+### Estratégia
+
+- Arquitetura orientada a eventos
+- Sharding determinístico por chave
+- Garantia de ordenação por shard
+- Single Active Consumer por fila
+
+### Topologia
+
+- Exchange principal: `transacoes.exchange`
+- Exchange de retry: `transacoes.exchange.retry`
+- Exchange de DLQ: `transacoes.exchange.dlx`
+
+Cada shard possui:
+- Fila principal
+- Fila de retry com TTL
+- Dead Letter Queue (DLQ)
+
+### Resiliência
+
+- Retry automático
+- Controle de tentativas via header `x-attempts`
+- Após exceder o limite → mensagem enviada para DLQ
 
 ---
 
-## 🩺 Health Checks
+## 💾 Cache (Redis)
 
-### Liveness
-```
-GET /health/live
-```
+- Cache aplicado para leitura de contas
+- Estratégia **cache-first**
+- TTL padrão: **1 dia**
 
-### Readiness
-```
-GET /health/ready
-```
-Verifica:
-- Banco de dados
-- Mensageria
+### Invalidação de Cache
+
+- Executada somente após sucesso no processamento da transação
+- Invalidação automática:
+  - Conta origem
+  - Conta destino (quando aplicável)
+
+---
+
+## 🧠 Domínio
+
+### Entidades Principais
+
+- Cliente
+- Conta
+- Transacao
+
+### Tipos de Operação
+
+- Crédito
+- Débito
+- Reserva
+- Captura
+- Transferência
+- Estorno
+
+### Regras de Negócio
+
+- Validação de quantia e moeda
+- Controle de saldo disponível e limite de crédito
+- Reserva e captura desacopladas
+- Estorno reversível conforme tipo da transação original
+- Nenhuma mutação ocorre em caso de falha
+
+Toda a lógica está centralizada no **ProcessadorTransacaoDomainService**.
 
 ---
 
 ## 🧪 Testes
 
-O projeto possui **testes unitários focados em comportamento**, cobrindo:
-
-### ContaService
-- Cache hit / miss
-- Não consultar banco quando cache existe
-- Não setar cache indevidamente
-- TTL correto
-
-### TransacaoService
-- Validações de entrada
-- Transferência (erros e sucesso)
-- Estorno (erros e sucesso)
-- Verificação de:
-  - persistência
-  - publicação de evento
-  - correlationId
-  - exchange e routing key corretos
-
-➡️ Testes validam **efeitos colaterais**, não apenas retorno.
+- Cobertura completa de:
+  - Domínio
+  - Application Services
+- Testes escritos como **documentação executável**
+- Validação de cenários de erro e sucesso
+- Garantia de não mutação em falhas
 
 ---
 
-## 🧩 Concorrência
+## ❤️ Health Checks
 
-- Controle de concorrência otimista via `RowVersion`
-- Prepara o sistema para múltiplas transações concorrentes na mesma conta
-- Base sólida para retry ou serialização futura
+Disponíveis na Web API:
 
----
+- `/health/live`
+  - Verifica se a aplicação está em execução
 
-## 🛠️ Execução Local (Docker Compose)
-
-### Subir ambiente completo
-```bash
-docker compose up --build
-```
-
-### Serviços disponíveis
-
-| Serviço | Endereço |
-|------|---------|
-| WebApi | http://localhost:8080 |
-| Frontend | http://localhost:4200 |
-| RabbitMQ UI | http://localhost:15672 |
-| SQL Server | localhost:1433 |
-| Redis | localhost:6379 |
-
-RabbitMQ:
-- user: `user`
-- password: `password`
+- `/health/ready`
+  - Verifica dependências:
+    - SQL Server
+    - RabbitMQ
 
 ---
 
-## 📊 Observabilidade
+## 📚 Swagger
 
-### Implementado
-- CorrelationId propagado até o worker
-- Logs estruturados
-- Health checks
-
-### Evoluções recomendadas
-- OpenTelemetry
-- Métricas Prometheus
-- Tracing distribuído
-- DLQ + retry no consumer
+- Documentação interativa
+- Suporte a autenticação JWT Bearer
+- Facilita testes manuais e integração
 
 ---
 
-## 📋 Checklist de Produção
+## ⚙️ Configuração
 
-- [ ] Secrets em Secret Manager
-- [ ] Rate limiting
-- [ ] CORS restrito
-- [ ] Retry + DLQ
-- [ ] Tratamento de concorrência (retry RowVersion)
-- [ ] Remover `EnsureCreated` em produção
-- [ ] Observabilidade completa
+### Dependências Externas
 
----
+- SQL Server
+- Redis
+- RabbitMQ
 
-## 🧠 Decisões Arquiteturais (ADR)
+### Principais Configurações
 
-### Processamento Assíncrono
-Transações são criadas como `PENDENTE` e processadas fora do request HTTP para reduzir latência e aumentar escalabilidade.
-
-### Cache de Leitura
-Cache Redis aplicado apenas para leitura de contas, com invalidação após sucesso do processamento.
-
-### Estorno como Compensação
-Estorno é tratado como operação reversa explícita, garantindo integridade do histórico financeiro.
+- `Jwt`
+- `RabbitMq`
+- `RedisConnection`
+- `ConnectionStrings`
 
 ---
 
-**Perfeitamente utilizável como projeto de portfólio sênior.**
+## 🚀 Considerações de Produção
+
+- Arquitetura preparada para alta concorrência
+- Sharding evita contenção em filas
+- Cache reduz carga no banco
+- Retry e DLQ garantem resiliência
+- CorrelationId habilita rastreabilidade ponta-a-ponta
+
+---
+
