@@ -242,12 +242,6 @@ Disponíveis na Web API:
 - Redis
 - RabbitMQ
 
-### Principais Configurações
-
-- `Jwt`
-- `RabbitMq`
-- `RedisConnection`
-- `ConnectionStrings`
 
 ---
 
