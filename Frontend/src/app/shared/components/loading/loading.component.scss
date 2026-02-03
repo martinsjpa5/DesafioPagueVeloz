@@ -1,0 +1,80 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: grid;
+  place-items: center;
+
+  background: rgba(15, 15, 20, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  animation: overlayFadeIn 180ms ease-out;
+}
+
+.loader-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  padding: 18px 20px;
+  border-radius: 16px;
+
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+  transform: translateY(2px) scale(0.98);
+  animation: cardPop 180ms ease-out forwards;
+}
+
+.ring {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+
+  border: 3px solid rgba(255, 255, 255, 0.22);
+  border-top-color: rgba(255, 255, 255, 0.95);
+
+  animation: spin 900ms linear infinite;
+}
+
+.loader-text {
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.1;
+
+  .title {
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.2px;
+  }
+
+  .subtitle {
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.65);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cardPop {
+  to { transform: translateY(0) scale(1); }
+}
+
+/* Acessibilidade: respeita quem prefere menos animação */
+@media (prefers-reduced-motion: reduce) {
+  .overlay, .loader-card { animation: none; }
+  .ring { animation: none; }
+}

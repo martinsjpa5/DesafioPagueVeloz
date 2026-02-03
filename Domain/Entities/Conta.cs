@@ -1,4 +1,5 @@
 ﻿
+using Domain.Enums;
 using System.ComponentModel.DataAnnotations;
 
 namespace Domain.Entities
@@ -8,9 +9,11 @@ namespace Domain.Entities
         public decimal SaldoDisponivel { get; set; }
         public decimal SaldoReservado { get; set; }
         public decimal LimiteDeCredito { get; set; }
-        public decimal Status { get; set; }
+        public StatusContaEnum Status { get; set; }
         [Timestamp]
         public byte[] RowVersion { get; set; } = Array.Empty<byte>();
-        public DateTime DataAtualizacao { get; set; }
+        public ICollection<Transacao> Transacoes { get; set; }
+        public Cliente Cliente { get; set; }
+        public int ClienteId { get; set; }
     }
 }
