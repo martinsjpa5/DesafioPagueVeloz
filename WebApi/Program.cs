@@ -1,13 +1,14 @@
 using Application.Interfaces.Context;
 using Application.Interfaces.Services;
 using Application.Services;
+using Domain.Interfaces.Repositories;
+using Infraestrutura.Caching;
 using Infraestrutura.EntityFramework;
 using Infraestrutura.EntityFramework.Context;
-using Infraestrutura.Messaging.RabbitMq;
-using WebApi.Extensions;
-using Domain.Interfaces.Repositories;
 using Infraestrutura.EntityFramework.Repositories;
-using Infraestrutura.Caching;
+using Infraestrutura.Messaging.RabbitMq;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using WebApi.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -66,6 +67,16 @@ app.UseCors("AllowAll");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("database") || check.Tags.Contains("messaging")
+});
 
 app.MapControllers();
 
