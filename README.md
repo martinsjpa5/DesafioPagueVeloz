@@ -145,7 +145,7 @@ Roteamento:
 
 ## 🔒 Controle de Concorrência (RowVersion / Optimistic Lock)
 
-O sistema utiliza **controle de concorrência otimista** através do campo **RowVersion** nas entidades críticas, principalmente em **Conta**.
+O sistema utiliza **controle de concorrência otimista** através do campo **RowVersion** na entidade Conta
 
 ### Como funciona
 - A entidade `Conta` possui a propriedade `RowVersion`
