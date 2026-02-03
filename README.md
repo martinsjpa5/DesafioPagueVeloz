@@ -1,257 +1,233 @@
-# 💳 Sistema de Transações Financeiras – API & Worker Assíncrono
+# 💳 Private Banking – Sistema de Transações Financeiras (API + Worker + Frontend Angular)
 
 ## 📌 Visão Geral
 
-Este projeto implementa uma **plataforma de transações financeiras** com foco em **robustez, escalabilidade, consistência e boas práticas de mercado**, utilizando uma arquitetura baseada em **DDD (Domain-Driven Design) + Clean Architecture** e processamento **assíncrono orientado a eventos**.
+Este repositório contém uma solução completa para simular um **sistema financeiro / private banking**, com:
 
-A solução suporta operações financeiras críticas como **Crédito, Débito, Reserva, Captura, Transferência e Estorno**, garantindo:
-- Regras de negócio explícitas e centralizadas no domínio
-- Processamento resiliente e escalável
-- Consistência eventual
-- Invalidação de cache orientada a eventos
-- Observabilidade por `correlationId`
+- **Web API** (ASP.NET Core) para autenticação, contas e transações
+- **Worker de Transações** (BackgroundService) para processamento assíncrono via RabbitMQ
+- **Frontend Angular** (painel web) com autenticação, proteção de rotas e interceptor de 401
+- **Infra local via Docker Compose** (SQL Server, RabbitMQ Management, Redis)
+
+A arquitetura foi desenhada para demonstrar práticas **nível sênior**:
+- **DDD + Clean Architecture**
+- **Event-Driven / Consistência eventual**
+- **Sharding em filas RabbitMQ** (roteamento determinístico + single-active-consumer por shard)
+- **Cache Redis com invalidação orientada a evento**
+- **Health checks / readiness e liveness**
+- **Testes (domínio e aplicação) como documentação executável**
 
 ---
 
 ## 🧱 Arquitetura
 
-### Estilo Arquitetural
-- Clean Architecture
-- Domain-Driven Design (DDD)
-- Event-Driven Architecture
-
-### Separação de Camadas
-
+### Camadas / Projetos
 - **Domain**
-  - Entidades
-  - Enums
-  - Serviços de domínio
-  - Regras de negócio puras
-
+  - Entidades (`Cliente`, `Conta`, `Transacao`)
+  - Enums e regras de negócio
+  - `ProcessadorTransacaoDomainService` (núcleo do domínio)
 - **Application**
-  - Casos de uso
-  - Orquestração
-  - Validações
-  - Publicação de eventos
-
+  - Services (ex.: `AuthService`, `ContaService`, `TransacaoService`)
+  - Orquestração e publicação de eventos
+  - Padrão de retorno `ResultPattern`
 - **Infraestrutura**
-  - Entity Framework Core
-  - RabbitMQ
-  - Redis
-  - Implementações técnicas
-
+  - EF Core + SQL Server
+  - RabbitMQ (publisher/consumer, topology sharded, retry/DLQ)
+  - Redis (cache)
 - **WebApi**
   - Controllers
-  - Autenticação
-  - Autorização
+  - JWT + Identity
   - Swagger
-  - Health Checks
-
+  - Middlewares (exception handling)
+  - Health checks
 - **WorkerTransacao**
-  - Consumers RabbitMQ
-  - Processamento assíncrono
-  - Invalidação de cache
+  - Consumer sharded (`TransacaoCriadaConsumer`)
+  - Processamento assíncrono e invalidação de cache
+- **Frontend (Angular)**
+  - Login / Cadastro
+  - Proteção de rotas (Auth Guard)
+  - Interceptor: tratamento de **401** (ex.: logout/redirecionamento)
 
 ---
 
-## 🧩 Componentes Principais
+## 🧩 Componentes
 
-### Web API
-
+### 1) Web API (ASP.NET Core)
 Responsável por:
-- Autenticação de usuários
-- Emissão de JWT
-- Cadastro de clientes e contas
-- Criação de transações
-- Consultas de contas e transações
+- Registro e login de usuário (Identity + JWT)
+- Registro e consulta de contas
+- Criação e consulta de transações
+- Health checks e Swagger
 
-Tecnologias:
-- ASP.NET Core
-- Identity Core
-- JWT Bearer
-- Swagger
-- EF Core
-- Redis
-- RabbitMQ (Publisher)
+Recursos importantes:
+- **JWT** com claim `clienteId`
+- `IUserContext` para obter `ClienteId` via claims
+- **Swagger** com Bearer Token
+- **API Behavior** customizado (422 para ModelState inválido)
+- **Exception Middleware** padronizando erro interno
 
 ---
 
-### Worker de Transações
-
+### 2) WorkerTransacao (.NET Worker Service)
 Responsável por:
-- Consumir eventos de transações criadas
-- Processar regras de negócio no domínio
-- Atualizar saldos das contas
-- Invalidar cache Redis
-- Garantir idempotência e resiliência
+- Consumir evento `TransacaoCriadaEvent`
+- Carregar transação pendente + relacionamentos (origem/destino/cliente/transacao estornada)
+- Executar domínio (`ProcessadorTransacaoDomainService.Processar`)
+- Persistir alterações
+- **Invalidar cache** de contas após sucesso
 
-Tecnologias:
-- .NET Worker Service
-- RabbitMQ (Consumer Sharded)
-- EF Core
-- Redis
+Resiliência:
+- **Retry com TTL** + **DLQ** por shard
+- Controle de tentativas via header `x-attempts`
 
 ---
 
-## 🔐 Segurança
+### 3) Frontend Angular
+Responsável por:
+- UI de painel (contas, saldos, transações)
+- Registro de conta e operações
+- Autenticação e sessão
+- Proteção de rotas
+- Interceptor para tratar **401** retornado pela API (ex.: redireciona para login / limpa token)
 
-- Autenticação via **JWT Bearer**
-- Tokens assinados com **HMAC SHA256**
-- Claims:
-  - `sub` → email do usuário
-  - `clienteId` → identificação do cliente
-- Endpoints protegidos com `[Authorize]`
-- Contexto do usuário acessado via `IUserContext`
+> Observação: o frontend é servido via container na porta `4200` (mapeado para Nginx/HTTP interno do container).
 
 ---
 
-## 🔁 Fluxo de Processamento de Transação
+## 🔐 Segurança (JWT + Identity)
+
+- Login gera token JWT com:
+  - `sub`: email
+  - `jti`: identificador único do token
+  - `clienteId`: identificação do cliente
+- Endpoints de conta/transação exigem `[Authorize]`
+- A API configura `ClockSkew` e valida issuer/audience/key
+
+---
+
+## 🔁 Fluxo de Transação (consistência eventual)
 
 ```text
-Cliente
-  ↓
-Web API
-  ↓
-Validações iniciais
-  ↓
-Criação da Transação (Status = PENDENTE)
-  ↓
-Publicação de Evento (RabbitMQ)
-  ↓
-Worker consome evento
-  ↓
-Processamento no Domínio
-  ↓
-Atualização de saldos
-  ↓
-Invalidação de cache
+Usuário (Frontend)
+  ↓ (HTTP)
+Web API cria Transação (Status = PENDENTE) + salva no SQL Server
+  ↓ (RabbitMQ)
+Publica TransacaoCriadaEvent em transacoes.exchange (routingKey sharded)
+  ↓ (WorkerTransacao)
+Consumer lê mensagem do shard, processa regras, atualiza contas e transação
+  ↓ (Redis)
+Invalida cache da conta origem/destino após sucesso
 ```
 
 ---
 
-## 📬 Mensageria (RabbitMQ)
+## 📬 Mensageria (RabbitMQ Sharded)
 
-### Estratégia
+### Topologia (por shard)
+- Exchange principal: `transacoes.exchange` (Direct)
+- Exchange retry: `transacoes.exchange.retry`
+- Exchange DLX: `transacoes.exchange.dlx`
 
-- Arquitetura orientada a eventos
-- Sharding determinístico por chave
-- Garantia de ordenação por shard
-- Single Active Consumer por fila
+Para cada shard:
+- `transacoes.shard-{n}.queue` (principal)
+- `transacoes.shard-{n}.queue.retry` (TTL + dead-letter para principal)
+- `transacoes.shard-{n}.queue.dlq` (dead-letter final)
 
-### Topologia
+Configurações relevantes:
+- `x-single-active-consumer` habilitado nas filas (evita consumo concorrente no mesmo shard)
+- `prefetchCount` configurável
+- Tentativas controladas por header `x-attempts`
 
-- Exchange principal: `transacoes.exchange`
-- Exchange de retry: `transacoes.exchange.retry`
-- Exchange de DLQ: `transacoes.exchange.dlx`
-
-Cada shard possui:
-- Fila principal
-- Fila de retry com TTL
-- Dead Letter Queue (DLQ)
-
-### Resiliência
-
-- Retry automático
-- Controle de tentativas via header `x-attempts`
-- Após exceder o limite → mensagem enviada para DLQ
+Roteamento:
+- O shard é calculado de forma determinística (SHA256 → int → mod `ShardCount`)
 
 ---
 
 ## 💾 Cache (Redis)
 
-- Cache aplicado para leitura de contas
-- Estratégia **cache-first**
+- Cache aplicado na consulta de conta (cache-first)
 - TTL padrão: **1 dia**
-
-### Invalidação de Cache
-
-- Executada somente após sucesso no processamento da transação
-- Invalidação automática:
-  - Conta origem
-  - Conta destino (quando aplicável)
-
----
-
-## 🧠 Domínio
-
-### Entidades Principais
-
-- Cliente
-- Conta
-- Transacao
-
-### Tipos de Operação
-
-- Crédito
-- Débito
-- Reserva
-- Captura
-- Transferência
-- Estorno
-
-### Regras de Negócio
-
-- Validação de quantia e moeda
-- Controle de saldo disponível e limite de crédito
-- Reserva e captura desacopladas
-- Estorno reversível conforme tipo da transação original
-- Nenhuma mutação ocorre em caso de falha
-
-Toda a lógica está centralizada no **ProcessadorTransacaoDomainService**.
-
----
-
-## 🧪 Testes
-
-- Cobertura completa de:
-  - Domínio
-  - Application Services
-- Testes escritos como **documentação executável**
-- Validação de cenários de erro e sucesso
-- Garantia de não mutação em falhas
+- Invalidação de cache ao final do processamento assíncrono (após sucesso da transação)
 
 ---
 
 ## ❤️ Health Checks
 
-Disponíveis na Web API:
-
-- `/health/live`
-  - Verifica se a aplicação está em execução
-
-- `/health/ready`
-  - Verifica dependências:
-    - SQL Server
-    - RabbitMQ
+A API expõe:
+- `GET /health/live`  
+  Liveness (sempre OK quando o processo está de pé)
+- `GET /health/ready`  
+  Readiness baseado em tags:
+  - `database` (SQL Server)
+  - `messaging` (RabbitMQ)
 
 ---
 
 ## 📚 Swagger
 
-- Documentação interativa
-- Suporte a autenticação JWT Bearer
-- Facilita testes manuais e integração
+- UI em `/swagger`
+- Suporte a Bearer Token
+- Útil para testes manuais dos endpoints
 
 ---
 
-## ⚙️ Configuração
+## 🐳 Docker Compose (ambiente local)
 
-### Dependências Externas
+Este repositório inclui `docker-compose.yml` com os serviços:
 
-- SQL Server
-- Redis
-- RabbitMQ
+- `webapi` (API) — portas `8080` e `8081`
+- `workertransacao` (worker)
+- `rabbitmq` (RabbitMQ + Management) — portas `5672` e `15672`
+- `sqlserver` (SQL Server 2022) — porta `1433`
+- `redis` (Redis) — porta `6379`
+- `frontend` (Angular) — porta `4200`
 
+### Subir tudo
+```bash
+docker compose up --build
+```
+
+### Acessos
+- Frontend: `http://localhost:4200`
+- API (HTTP): `http://localhost:8080`
+- Swagger: `http://localhost:8080/swagger`
+- RabbitMQ Management: `http://localhost:15672`
+- SQL Server: `localhost,1433`
+- Redis: `localhost:6379`
+
+### Credenciais padrão (docker-compose)
+RabbitMQ:
+- Usuário: `user`
+- Senha: `password`
+
+SQL Server:
+- `SA_PASSWORD`: `YourStrong!Passw0rd`
+
+> Recomendações para produção:
+> - Nunca versionar senhas reais
+> - Usar secrets/variáveis de ambiente seguras
+> - Habilitar TLS no RabbitMQ e SQL Server conforme necessário
 
 ---
 
-## 🚀 Considerações de Produção
+## ✅ Testes
 
-- Arquitetura preparada para alta concorrência
-- Sharding evita contenção em filas
-- Cache reduz carga no banco
-- Retry e DLQ garantem resiliência
-- CorrelationId habilita rastreabilidade ponta-a-ponta
+A solução contém testes cobrindo:
+- Regras de domínio (ProcessadorTransacao)
+- Services de aplicação (Auth/Conta/Transacao)
+
+Exemplo (na raiz da solução):
+```bash
+dotnet test
+```
+
+---
+
+## 📦 Observabilidade (correlationId)
+
+- A API passa `HttpContext.TraceIdentifier` como `correlationId` na publicação do evento
+- O worker registra logs com `CorrelationId`
+- Isso permite rastrear ponta-a-ponta: request → evento → processamento
 
 ---
 
