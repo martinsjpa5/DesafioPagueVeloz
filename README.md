@@ -203,11 +203,6 @@ RabbitMQ:
 SQL Server:
 - `SA_PASSWORD`: `YourStrong!Passw0rd`
 
-> Recomendações para produção:
-> - Nunca versionar senhas reais
-> - Usar secrets/variáveis de ambiente seguras
-> - Habilitar TLS no RabbitMQ e SQL Server conforme necessário
-
 ---
 
 ## ✅ Testes
