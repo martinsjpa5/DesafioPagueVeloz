@@ -143,6 +143,25 @@ Roteamento:
 
 ---
 
+## 🔒 Controle de Concorrência (RowVersion / Optimistic Lock)
+
+O sistema utiliza **controle de concorrência otimista** através do campo **RowVersion** nas entidades críticas, principalmente em **Conta**.
+
+### Como funciona
+- A entidade `Conta` possui a propriedade `RowVersion`
+- No Entity Framework Core, ela é configurada como:
+  - `IsRowVersion()`
+  - `IsConcurrencyToken()`
+- A cada atualização da linha, o banco altera automaticamente o valor do `RowVersion`
+
+### Benefícios
+- Evita **lost updates** em cenários concorrentes
+- Garante integridade de saldo em operações financeiras
+- Não exige bloqueios pessimistas no banco
+- Escala melhor em ambientes de alta concorrência
+
+---
+
 ## 💾 Cache (Redis)
 
 - Cache aplicado na consulta de conta (cache-first)
