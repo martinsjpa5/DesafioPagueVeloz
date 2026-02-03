@@ -245,12 +245,5 @@ dotnet test
 
 ---
 
-## 📐 Diagramas de Arquitetura
 
-Este projeto utiliza o **modelo C4** e diagramas de sequência para documentar a arquitetura e os fluxos críticos.
-
-- [C4 – Context Diagram](docs/01-context-diagram.md)
-- [C4 – Container Diagram](docs/02-container-diagram.md)
-- [C4 – Component Diagram (Web API)](docs/03-component-webapi.md)
-- [Diagrama de Sequência – Processamento de Transação](docs/04-sequence-transacao.md)
 
