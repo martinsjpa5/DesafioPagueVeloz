@@ -24,8 +24,8 @@ A arquitetura foi desenhada para demonstrar práticas **nível sênior**:
 ### Camadas / Projetos
 - **Domain**
   - Entidades (`Cliente`, `Conta`, `Transacao`)
-  - Enums e regras de negócio
-  - `ProcessadorTransacaoDomainService` (núcleo do domínio)
+  - Enums
+  - `ProcessadorTransacaoDomainService` (Serviço de domínio)
 - **Application**
   - Services (ex.: `AuthService`, `ContaService`, `TransacaoService`)
   - Orquestração e publicação de eventos
@@ -44,7 +44,7 @@ A arquitetura foi desenhada para demonstrar práticas **nível sênior**:
   - Consumer sharded (`TransacaoCriadaConsumer`)
   - Processamento assíncrono e invalidação de cache
 - **Frontend (Angular)**
-  - Login / Cadastro
+  - Login / Cadastro / Registro de Contas Bancarias e Transações
   - Proteção de rotas (Auth Guard)
   - Interceptor: tratamento de **401** (ex.: logout/redirecionamento)
 
