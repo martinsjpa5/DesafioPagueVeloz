@@ -1,154 +1,153 @@
-Core Financeiro — API + Worker (Event-Driven)
-📌 Visão Geral
+# Core Financeiro — API + Worker (Event-Driven)
 
-Este projeto implementa um core financeiro simplificado, orientado a eventos, com separação clara entre orquestração, regras de negócio e infraestrutura.
+## 📌 Visão Geral
 
-A solução foi desenhada com foco em boas práticas de mercado, incluindo:
+Este projeto implementa um **core financeiro simplificado**, orientado a eventos, com separação clara entre **orquestração**, **regras de negócio** e **infraestrutura**.
 
-ASP.NET Core moderno
+A solução foi desenhada com foco em **boas práticas de mercado**, incluindo:
 
-Domain-Driven Design (DDD)
+- ASP.NET Core moderno
+- Domain-Driven Design (DDD)
+- Processamento assíncrono via mensageria
+- Consistência eventual
+- Cache Redis
+- Controle de concorrência otimista
+- Observabilidade básica (health checks + correlation id)
+- Execução local via Docker Compose
 
-Processamento assíncrono via mensageria
+---
 
-Consistência eventual
+## 🧱 Arquitetura
 
-Cache Redis
+### Componentes
 
-Controle de concorrência otimista
+| Componente          | Responsabilidade |
+|--------------------|------------------|
+| **WebApi**          | Expor endpoints REST, autenticação, criação de transações |
+| **WorkerTransacao** | Processar transações pendentes |
+| **RabbitMQ**        | Transporte de eventos |
+| **SQL Server**      | Persistência relacional |
+| **Redis**           | Cache de leitura |
+| **Frontend (Angular)** | Interface do usuário |
 
-Observabilidade básica (health checks + correlation id)
+### Estilo Arquitetural
 
-Execução local via Docker Compose
+- Arquitetura em **camadas**
+- **Event-Driven Architecture**
+- **Consistência eventual**
+- **Sharding por cliente** no processamento de eventos
 
-🧱 Arquitetura
-Componentes
-Componente	Responsabilidade
-WebApi	Expor endpoints REST, autenticação, criação de transações
-WorkerTransacao	Processar transações pendentes
-RabbitMQ	Transporte de eventos
-SQL Server	Persistência relacional
-Redis	Cache de leitura
-Frontend (Angular)	Interface do usuário
-Estilo Arquitetural
+---
 
-Arquitetura em camadas
-
-Event-Driven Architecture
-
-Consistência eventual
-
-Sharding por cliente no processamento de eventos
-
-🗂 Estrutura do Projeto
+## 🗂 Estrutura do Projeto
 /WebApi
-  ├── Controllers
-  ├── Extensions
-  ├── Middleware
-  └── Program.cs
+├── Controllers
+├── Extensions
+├── Middleware
+└── Program.cs
 
 /WorkerTransacao
-  └── Consumers
+└── Consumers
 
 /Application
-  ├── Services
-  ├── Dtos
-  └── Interfaces
+├── Services
+├── Dtos
+└── Interfaces
 
 /Domain
-  ├── Entities
-  ├── Enums
-  ├── Events
-  └── Services
+├── Entities
+├── Enums
+├── Events
+└── Services
 
 /Infraestrutura
-  ├── EntityFramework
-  ├── Messaging
-  └── Caching
+├── EntityFramework
+├── Messaging
+└── Caching
 
 /Frontend
 /docker-compose.yml
 
-🔐 Segurança
-Autenticação
+---
 
-JWT Bearer Token
+## 🔐 Segurança
 
-ASP.NET Identity
+### Autenticação
 
-Claims relevantes:
+- JWT Bearer Token
+- ASP.NET Identity
+- Claims relevantes:
+  - `clienteId` → escopo do tenant
+  - `sub` → email do usuário
 
-clienteId → escopo do tenant
+### Autorização
 
-sub → email
+- Endpoints sensíveis utilizam `[Authorize]`
+- Escopo por cliente garantido via `IUserContext`
 
-Autorização
+---
 
-Endpoints sensíveis usam [Authorize]
+## 🌐 API — Endpoints
 
-Escopo por cliente garantido via IUserContext
+### Auth
 
-🌐 API — Endpoints
-Auth
-Método	Endpoint	Descrição
-POST	/Auth/Registrar	Registra usuário e cliente
-POST	/Auth/Logar	Autentica e retorna JWT
-Conta (JWT obrigatório)
-Método	Endpoint
-POST	/Conta/Registrar
-GET	/Conta
-GET	/Conta/{contaId}
-GET	/Conta/contasParaTransferencia/{id}
-Transação (JWT obrigatório)
-Método	Endpoint
-POST	/Transacao
-GET	/Transacao/conta/{contaId}
-GET	/Transacao/passiveisDeEstorno/conta/{contaId}
-📄 Swagger
+| Método | Endpoint            | Descrição |
+|-------:|---------------------|-----------|
+| POST   | `/Auth/Registrar`   | Registra usuário e cliente |
+| POST   | `/Auth/Logar`       | Autentica e retorna JWT |
 
-Disponível na raiz da aplicação
+### Conta (JWT obrigatório)
 
-Autenticação via Bearer JWT
+| Método | Endpoint |
+|-------:|----------|
+| POST   | `/Conta/Registrar` |
+| GET    | `/Conta` |
+| GET    | `/Conta/{contaId}` |
+| GET    | `/Conta/contasParaTransferencia/{id}` |
 
-Fluxo:
+### Transação (JWT obrigatório)
 
-Faça login
+| Método | Endpoint |
+|-------:|----------|
+| POST   | `/Transacao` |
+| GET    | `/Transacao/conta/{contaId}` |
+| GET    | `/Transacao/passiveisDeEstorno/conta/{contaId}` |
 
-Copie o token
+---
 
-Clique em Authorize
+## 📄 Swagger
 
-Informe:
+- Disponível na **raiz da aplicação**
+- Autenticação via **Bearer JWT**
 
-Bearer {seu_token}
+### Como usar
+
+1. Faça login em `/Auth/Logar`
+2. Copie o token JWT retornado
+3. Clique em **Authorize** no Swagger
+4. Informe: Bearer {seu_token}
 
 Controle de Concorrência
 
 RowVersion habilita concorrência otimista
 
-EF Core gera:
+O EF Core gera:
 
-UPDATE ... WHERE RowVersion = @OriginalRowVersion
+UPDATE Conta
+SET ...
+WHERE Id = @Id AND RowVersion = @OriginalRowVersion
 
 
-Em caso de conflito:
+Conflitos resultam em DbUpdateConcurrencyException
 
-DbUpdateConcurrencyException
-
-Base pronta para:
-
-retry
-
-serialização por cliente
-
-escalabilidade segura
+Base pronta para retry e serialização por cliente
 
 🔄 Fluxo de Transação
 1️⃣ Criação (WebApi)
 
 Valida request
 
-Garante conta pertence ao cliente logado
+Garante que a conta pertence ao cliente logado
 
 Cria Transacao com status PENDENTE
 
@@ -158,11 +157,11 @@ Publica TransacaoCriadaEvent
 
 Retorna resposta imediatamente
 
-➡️ Baixa latência no request
+➡️ Baixa latência no request HTTP
 
 2️⃣ Processamento (Worker)
 
-Consome evento RabbitMQ
+Consome evento do RabbitMQ
 
 Carrega transação pendente (AsTracking)
 
@@ -174,7 +173,7 @@ Persiste alterações
 
 Invalida cache Redis (origem e destino)
 
-🧠 Regras de Negócio (Domain Service)
+🧠 Regras de Negócio (Domain)
 
 Implementadas em ProcessadorTransacaoDomainService:
 
@@ -188,17 +187,17 @@ Captura
 
 Transferência
 
-Estorno (compensação)
+Estorno (operação compensatória)
 
 Características:
 
-Domínio sem dependência de infraestrutura
+Domínio isolado de infraestrutura
 
-Regras explícitas
+Mutação de estado explícita
 
-Mensagens de erro controladas
+Erros controlados
 
-Mutação de estado clara
+Lógica centralizada
 
 🧊 Cache (Redis)
 Estratégia
@@ -211,7 +210,7 @@ TTL: 1 dia
 
 Invalidação
 
-Executada pelo worker apenas em transações SUCESSO
+Executada pelo worker somente em transações SUCESSO
 
 ➡️ Garante consistência eventual
 
@@ -221,7 +220,7 @@ Exchange: transacoes.exchange
 
 Routing key: transacoes.shard-{n}
 
-Shard calculado por ClienteId
+Shard calculado a partir do ClienteId
 
 Benefícios
 
@@ -248,7 +247,7 @@ Mensageria
 🧯 Tratamento de Erros
 Validação
 
-DTO inválido → 422
+DTO inválido → 422 Unprocessable Entity
 
 Retorno padronizado (ResultPattern)
 
@@ -263,10 +262,10 @@ Mensagem genérica ao cliente
 Log detalhado internamente
 
 🐳 Execução Local (Docker)
-Subir ambiente
+Subir ambiente completo
 docker compose up --build
 
-Serviços
+Serviços disponíveis
 Serviço	Porta
 WebApi	8080 / 8081
 Frontend	4200
@@ -290,13 +289,56 @@ Métricas (Prometheus)
 
 Tracing distribuído
 
-DLQ + retries
+DLQ + retry
 
 🧠 Notas de Arquitetura (Senior Notes)
 
-✔ Event-Driven
-✔ Separação Application / Domain / Infra
+✔ Event-driven
+✔ Separação Application / Domain / Infrastructure
 ✔ Cache consciente
 ✔ Concorrência otimista
 ✔ Worker dedicado
 ✔ Sharding por cliente
+
+Próximos passos
+
+Retry para DbUpdateConcurrencyException
+
+Idempotência explícita no consumer
+
+Rate limiting
+
+Secrets Manager
+
+RBAC
+
+Outbox Pattern
+
+🎯 Pitch para entrevista
+
+“Esse projeto simula um core financeiro real. A API cria transações pendentes e publica eventos. Um worker processa as regras do domínio e atualiza saldo e status, usando sharding por cliente e concorrência otimista. O sistema é consistente de forma eventual e escalável.”
+
+✅ Conclusão
+
+Este projeto demonstra:
+
+maturidade técnica
+
+domínio de .NET moderno
+
+entendimento real de sistemas distribuídos
+
+preocupação com produção e escala
+
+📌 Projeto totalmente válido como portfólio sênior.
+
+
+---
+
+Se quiser, no próximo passo eu posso:
+- **converter isso para Confluence**
+- **gerar diagramas C4**
+- **criar ADRs**
+- **revisar o README como se fosse um tech lead exigente**
+
+Só falar 👍
