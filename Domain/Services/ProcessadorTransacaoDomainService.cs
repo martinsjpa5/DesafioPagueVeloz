@@ -101,9 +101,6 @@ namespace Domain.Services
             return DomainPattern.SucessoBuilder();
         }
 
-        // =========================
-        // ESTORNO
-        // =========================
 
         private DomainPattern ProcessarEstorno(Transacao solicitacao)
         {

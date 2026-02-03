@@ -1,0 +1,133 @@
+.painel {
+  --radius: 16px;
+
+  .card {
+    border-radius: var(--radius);
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0.75rem;
+    z-index: 20;
+    backdrop-filter: blur(10px);
+  }
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #0d6efd, #20c997);
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.12);
+    display: inline-block;
+  }
+
+  .input-group-modern {
+    .input-group-text {
+      border-radius: 12px 0 0 12px;
+      border-right: 0;
+    }
+
+    .form-select {
+      border-left: 0;
+      border-right: 0;
+      min-height: 44px;
+    }
+
+    .btn {
+      border-radius: 0 12px 12px 0;
+    }
+  }
+
+  .stat {
+    padding: 14px 14px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.75);
+
+    .label {
+      font-size: 0.82rem;
+      color: #6c757d;
+      margin-bottom: 6px;
+    }
+
+    .value {
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+  }
+
+  .table-modern {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+
+    table {
+      margin-bottom: 0;
+    }
+
+    thead th {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 1;
+      font-size: 0.82rem;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+
+    tbody td {
+      padding-top: 12px;
+      padding-bottom: 12px;
+    }
+
+    tbody tr:hover {
+      background: rgba(13, 110, 253, 0.04);
+    }
+  }
+
+  .danger-icon {
+    color: #dc3545;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      transition: transform 0.12s ease, opacity 0.12s ease;
+      opacity: 0.9;
+    }
+
+    &:hover svg {
+      transform: scale(1.08);
+      opacity: 1;
+    }
+  }
+
+  .empty-state {
+    border: 1px dashed rgba(0, 0, 0, 0.12);
+    border-radius: 14px;
+    padding: 18px;
+    background: rgba(0, 0, 0, 0.02);
+  }
+
+  .invalid-hint {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: #dc3545;
+  }
+
+  // Modal refinements
+  :host ::ng-deep .modal-content {
+    border-radius: 18px;
+  }
+
+  :host ::ng-deep .modal-header,
+  :host ::ng-deep .modal-footer {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+}

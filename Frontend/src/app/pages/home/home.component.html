@@ -1,229 +1,326 @@
-<div class="container py-4">
+<div class="container py-4 painel">
 
-  <!-- Top actions -->
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <div class="fw-semibold">Painel</div>
-    <div class="text-muted small" *ngIf="cliente as cl">
-      Cliente: <strong>{{ cl.nome }}</strong>
-    </div>
+  <div class="topbar card border-0 shadow-sm mb-3">
+    <div class="card-body py-3">
+      <div class="d-flex flex-wrap align-items-center gap-2 justify-content-between">
 
-    <button type="button" class="btn btn-outline-secondary" (click)="atualizarDados(true)" [disabled]="isRefreshing">
-      Atualizar
-    </button>
-  </div>
+        <div class="d-flex align-items-center gap-3">
+          <div class="title">
+            <div class="d-flex align-items-center gap-2">
+              <span class="dot"></span>
+              <h1 class="h5 mb-0 fw-bold">Painel</h1>
+            </div>
+            <div class="text-muted small" *ngIf="cliente as cl">
+              Cliente: <strong class="text-body">{{ cl.nome }}</strong>
+            </div>
+          </div>
+        </div>
 
-  <!-- Seletor de Conta (mantém ngModel apenas aqui) -->
-  <div class="row g-3 align-items-end">
-    <div class="col-12 col-md-6">
-      <label class="form-label">Conta (Origem)</label>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button type="button" class="btn btn-light border btn-sm px-3" (click)="atualizarDados(true)"
+            [disabled]="isRefreshing">
+            <span class="me-2 spinner-border spinner-border-sm" *ngIf="isRefreshing"></span>
+            Atualizar
+          </button>
+        </div>
 
-      <div class="input-group">
-        <select class="form-select" name="contaSelecionadaId" [(ngModel)]="contaSelecionadaId"
-          (change)="onSelecionarConta()">
-          <option [ngValue]="null">Selecione...</option>
-          <option *ngFor="let id of contas" [ngValue]="id">
-            {{ id }}
-          </option>
-        </select>
-
-        <button type="button" class="btn btn-outline-primary" (click)="abrirModalCadastroConta()">
-          + Conta
-        </button>
       </div>
     </div>
+  </div>
 
-    <div class="col-12 col-md-6 d-flex gap-2 justify-content-md-end">
-      <button type="button" class="btn btn-primary" (click)="abrirModalCriarTransacao()"
-        [disabled]="!contaSelecionadaId">
-        Nova Transação
-      </button>
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+
+        <div class="col-12 col-lg-7">
+          <label class="form-label mb-1">Conta (Origem)</label>
+
+          <div class="input-group input-group-modern">
+            <span class="input-group-text bg-white">
+              <!-- wallet icon (inline svg) -->
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" class="text-muted">
+                <path d="M3 7.5C3 6.12 4.12 5 5.5 5H18a3 3 0 0 1 3 3v1.5" stroke="currentColor" stroke-width="1.7"
+                  stroke-linecap="round" />
+                <path
+                  d="M3 9v9.5C3 19.88 4.12 21 5.5 21H18a3 3 0 0 0 3-3v-6.5a2.5 2.5 0 0 0-2.5-2.5H5.5C4.12 9 3 7.88 3 6.5"
+                  stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                <path d="M17 14h2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+              </svg>
+            </span>
+
+            <select class="form-select" name="contaSelecionadaId" [(ngModel)]="contaSelecionadaId"
+              (change)="onSelecionarConta()">
+              <option [ngValue]="null">Selecione...</option>
+              <option *ngFor="let id of contas" [ngValue]="id">{{ id }}</option>
+            </select>
+
+            <button type="button" class="btn btn-outline-primary" (click)="abrirModalCadastroConta()">
+              + Conta
+            </button>
+          </div>
+
+          <div class="form-text mt-2">
+            Dica: selecione uma conta para ver detalhes e transações.
+          </div>
+        </div>
+
+        <div class="col-12 col-lg-5 d-flex gap-2 justify-content-lg-end">
+          <button type="button" class="btn btn-primary px-4" (click)="abrirModalCriarTransacao()"
+            [disabled]="!contaSelecionadaId">
+            Nova Transação
+          </button>
+        </div>
+
+      </div>
     </div>
   </div>
 
-  <!-- Card da Conta Selecionada -->
-  <div class="row mt-3" *ngIf="contaSelecionada as c">
+  <div class="row g-3 mb-3" *ngIf="contaSelecionada as c">
     <div class="col-12">
-      <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-          <div class="fw-semibold">Conta Selecionada</div>
-          <span class="badge bg-secondary">ID {{ c.id }}</span>
+      <div class="card border-0 shadow-sm overflow-hidden">
+        <div class="card-header bg-white border-0 py-3">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+              <div class="fw-bold">Conta Selecionada</div>
+              <div class="text-muted small">Resumo financeiro da conta</div>
+            </div>
+
+            <span class="badge rounded-pill bg-secondary-subtle text-secondary-emphasis px-3 py-2">
+              ID {{ c.id }}
+            </span>
+          </div>
         </div>
 
         <div class="card-body">
           <div class="row g-3">
+
             <div class="col-12 col-md-3">
-              <div class="text-muted small">Saldo Disponível</div>
-              <div class="fw-semibold"> {{ c.saldoDisponivel | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</div>
+              <div class="stat">
+                <div class="label">Saldo Disponível</div>
+                <div class="value">
+                  {{ c.saldoDisponivel | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                </div>
+              </div>
             </div>
 
             <div class="col-12 col-md-3">
-              <div class="text-muted small">Saldo Reservado</div>
-              <div class="fw-semibold">{{ c.saldoReservado | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</div>
+              <div class="stat">
+                <div class="label">Saldo Reservado</div>
+                <div class="value">
+                  {{ c.saldoReservado | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                </div>
+              </div>
             </div>
 
             <div class="col-12 col-md-3">
-              <div class="text-muted small">Limite de Crédito</div>
-              <div class="fw-semibold">{{ c.limiteDeCredito | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</div>
+              <div class="stat">
+                <div class="label">Limite de Crédito</div>
+                <div class="value">
+                  {{ c.limiteDeCredito | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                </div>
+              </div>
             </div>
 
             <div class="col-12 col-md-3">
-              <div class="text-muted small">Status</div>
-              <div class="fw-semibold">{{ c.status }}</div>
+              <div class="stat">
+                <div class="label">Status</div>
+                <div class="value">
+                  <span class="badge rounded-pill bg-success-subtle text-success-emphasis px-3 py-2">
+                    {{ c.status }}
+                  </span>
+                </div>
+              </div>
             </div>
+
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Lista de Transações -->
-  <div class="card mt-3">
-    <div class="card-header d-flex justify-content-between align-items-center">
-      <div class="fw-semibold">Transações</div>
-      <span class="small text-muted" *ngIf="contaSelecionadaId">
-        Conta {{ contaSelecionadaId }}
-      </span>
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 py-3">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <div class="fw-bold">Transações</div>
+          <div class="text-muted small" *ngIf="contaSelecionadaId">Conta {{ contaSelecionadaId }}</div>
+        </div>
+
+        <span class="badge rounded-pill bg-light text-muted border px-3 py-2" *ngIf="contaSelecionadaId">
+          {{ transacoes.length }} registro(s)
+        </span>
+      </div>
     </div>
 
     <div class="card-body">
-      <div *ngIf="!contaSelecionadaId" class="text-muted">
-        Selecione uma conta para listar as transações.
+
+      <div *ngIf="!contaSelecionadaId" class="empty-state">
+        <div class="text-muted">
+          Selecione uma conta para listar as transações.
+        </div>
       </div>
 
-      <div class="table-responsive" *ngIf="contaSelecionadaId && transacoes.length > 0">
-        <table class="table table-sm table-striped align-middle">
+      <div class="table-responsive table-modern" *ngIf="contaSelecionadaId && transacoes.length > 0">
+        <table class="table align-middle mb-0">
           <thead>
             <tr>
               <th>Id</th>
               <th>Tipo</th>
               <th>Status</th>
-              <th>Quantia</th>
+              <th class="text-end">Quantia</th>
               <th>Moeda</th>
-              <th>Transação Estornada</th>
+              <th>Estornada</th>
               <th>Conta Destino</th>
               <th>Cliente Destino</th>
-              <th>Erro</th>
+              <th class="text-center">Erro</th>
             </tr>
           </thead>
+
           <tbody>
             <tr *ngFor="let t of transacoes">
-              <td>{{ t.id }}</td>
-              <td>{{ t.tipo }}</td>
-              <td>{{ t.status }}</td>
-              <td>{{ t.quantia | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</td>
-              <td>{{ t.moeda }}</td>
-              <td>{{ t.transacaoEstornadaId ?? '-' }}</td>
-              <td>{{ t.contaDestinoId ?? '-' }}</td>
-              <td>{{ t.nomeClienteContaDestino ?? '-' }}</td>
+              <td class="text-muted">{{ t.id }}</td>
+
+              <td>
+                <span class="badge rounded-pill bg-primary-subtle text-primary-emphasis px-3 py-2">
+                  {{ t.tipo }}
+                </span>
+              </td>
+
+              <td>
+                <span class="badge rounded-pill bg-light text-body border px-3 py-2">
+                  {{ t.status }}
+                </span>
+              </td>
+
+              <td class="text-end fw-semibold">
+                {{ t.quantia | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+              </td>
+
+              <td class="text-muted">{{ t.moeda }}</td>
+              <td class="text-muted">{{ t.transacaoEstornadaId ?? '-' }}</td>
+              <td class="text-muted">{{ t.contaDestinoId ?? '-' }}</td>
+              <td class="text-muted">{{ t.nomeClienteContaDestino ?? '-' }}</td>
+
               <td class="text-center">
                 <ng-container *ngIf="t.mensagemErro as err; else semErro">
-                  <span class="text-danger" style="cursor: help;" [ngbTooltip]="err" placement="top" container="body">
-                    ⚠️
-                  </span>
+                  <button type="button" class="btn btn-link p-0 danger-icon" [ngbTooltip]="err" placement="top"
+                    container="body" aria-label="Ver erro">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 9v5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                      <path d="M12 17h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                      <path d="M10.3 4.3a2 2 0 0 1 3.4 0l8 13.8A2 2 0 0 1 20 21H4a2 2 0 0 1-1.7-2.9l8-13.8z"
+                        stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                    </svg>
+                  </button>
                 </ng-container>
-
-                <ng-template #semErro>-</ng-template>
+                <ng-template #semErro><span class="text-muted">-</span></ng-template>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
 
-      <div *ngIf="contaSelecionadaId && transacoes.length === 0" class="text-muted">
-        Nenhuma transação encontrada.
+      <div *ngIf="contaSelecionadaId && transacoes.length === 0" class="empty-state">
+        <div class="text-muted">Nenhuma transação encontrada.</div>
       </div>
+
     </div>
   </div>
 
-  <!-- Modal: Cadastrar Conta -->
   <ng-template #modalCadastrarConta let-modal>
-    <div class="modal-header">
-      <h5 class="modal-title">Cadastrar Conta</h5>
+    <div class="modal-header border-0 pb-0">
+      <div>
+        <h5 class="modal-title fw-bold mb-1">Cadastrar Conta</h5>
+        <div class="text-muted small">Defina saldo inicial e limite de crédito.</div>
+      </div>
       <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
     </div>
 
     <form [formGroup]="formConta" (ngSubmit)="salvarConta(modal)">
-      <div class="modal-body">
+      <div class="modal-body pt-3">
 
         <div class="mb-3">
           <label class="form-label">Saldo Inicial</label>
-          <input type="text" class="form-control" formControlName="saldoInicial" mask="separator.2"
+          <input type="text" class="form-control form-control-lg" formControlName="saldoInicial" mask="separator.2"
             thousandSeparator="." decimalMarker="," />
-          <div class="text-danger mt-1"
+          <div class="invalid-hint"
             *ngIf="formConta.get('saldoInicial')?.touched && formConta.get('saldoInicial')?.invalid">
-            <small>O campo Saldo Inicial é obrigatório.</small>
+            O campo Saldo Inicial é obrigatório.
           </div>
         </div>
 
-        <div class="mb-3">
+        <div class="mb-0">
           <label class="form-label">Limite de Crédito</label>
-          <input type="text" class="form-control" formControlName="limiteDeCredito" mask="separator.2"
+          <input type="text" class="form-control form-control-lg" formControlName="limiteDeCredito" mask="separator.2"
             thousandSeparator="." decimalMarker="," />
-          <div class="text-danger mt-1"
+          <div class="invalid-hint"
             *ngIf="formConta.get('limiteDeCredito')?.touched && formConta.get('limiteDeCredito')?.invalid">
-            <small>O campo Limite de Crédito é obrigatório.</small>
+            O campo Limite de Crédito é obrigatório.
           </div>
         </div>
 
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">Cancelar</button>
-        <button type="submit" class="btn btn-primary" [disabled]="formConta.invalid">
-          Salvar
-        </button>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light border" (click)="modal.dismiss()">Cancelar</button>
+        <button type="submit" class="btn btn-primary px-4" [disabled]="formConta.invalid">Salvar</button>
       </div>
     </form>
   </ng-template>
 
-  <!-- Modal: Criar Transação -->
   <ng-template #modalCriarTransacao let-modal>
-    <div class="modal-header">
-      <h5 class="modal-title">Nova Transação</h5>
+    <div class="modal-header border-0 pb-0">
+      <div>
+        <h5 class="modal-title fw-bold mb-1">Nova Transação</h5>
+        <div class="text-muted small">Preencha os dados e confirme.</div>
+      </div>
       <button type="button" class="btn-close" (click)="modal.dismiss()"></button>
     </div>
 
     <form [formGroup]="formTransacao" (ngSubmit)="salvarTransacao(modal)">
-      <div class="modal-body">
+      <div class="modal-body pt-3">
         <div class="row g-3">
 
           <div class="col-md-4">
             <label class="form-label">Operação</label>
-            <select class="form-select" formControlName="operacao">
-              <option *ngFor="let op of operacoes" [ngValue]="op.value">
-                {{ op.label }}
-              </option>
+            <select class="form-select form-select-lg" formControlName="operacao">
+              <option *ngFor="let op of operacoes" [ngValue]="op.value">{{ op.label }}</option>
             </select>
-            <div class="text-danger mt-1"
+            <div class="invalid-hint"
               *ngIf="formTransacao.get('operacao')?.touched && formTransacao.get('operacao')?.invalid">
-              <small>O campo Operação é obrigatório.</small>
+              O campo Operação é obrigatório.
             </div>
           </div>
 
           <div class="col-md-4" *ngIf="!isEstorno">
             <label class="form-label">Quantia</label>
-            <input type="text" class="form-control" formControlName="quantia" mask="separator.2" thousandSeparator="."
-              decimalMarker="," />
-            <div class="text-danger mt-1"
-              *ngIf="formTransacao.get('quantia')?.touched && formTransacao.get('quantia')?.invalid">
-              <small>O campo Quantia é obrigatório.</small>
+            <input type="text" class="form-control form-control-lg" formControlName="quantia" mask="separator.2"
+              thousandSeparator="." decimalMarker="," />
+            <div class="invalid-hint"
+              *ngIf="formTransacao.get('quantia')?.touched && formTransacao.get('quantia')?.hasError('invalid')">
+              O campo Quantia é obrigatório.
+            </div>
+            <div class="invalid-hint"
+              *ngIf="formTransacao.get('quantia')?.touched && formTransacao.get('quantia')?.hasError('maiorQueZero')">
+              A quantia deve ser maior que zero.
             </div>
           </div>
 
           <div class="col-md-4">
             <label class="form-label">Moeda</label>
-            <input type="text" class="form-control" formControlName="moeda" />
-            <div class="text-danger mt-1"
+            <input type="text" class="form-control form-control-lg" formControlName="moeda" />
+            <div class="invalid-hint"
               *ngIf="formTransacao.get('moeda')?.touched && formTransacao.get('moeda')?.invalid">
-              <small>O campo Moeda é obrigatório.</small>
+              O campo Moeda é obrigatório.
             </div>
           </div>
 
-          <!-- Conta Destino: SELECT (Transferência) -->
+          <!-- Conta Destino (Transferência) -->
           <div class="col-md-6" *ngIf="isTransferencia">
             <label class="form-label">Conta Destino</label>
 
-            <select class="form-select" formControlName="contaDestinoId" [disabled]="carregandoContasDestino">
+            <select class="form-select form-select-lg" formControlName="contaDestinoId"
+              [disabled]="carregandoContasDestino">
               <option [ngValue]="null">Selecione...</option>
               <option *ngFor="let cd of contasDestino" [ngValue]="cd.id">
                 {{ cd.id }} - {{ cd.nomeCliente }}
@@ -234,17 +331,17 @@
               Carregando contas para transferência...
             </div>
 
-            <div class="text-danger mt-1" *ngIf="formTransacao.get('contaDestinoId')?.touched
-                && formTransacao.get('contaDestinoId')?.errors?.['required']">
-              <small>Conta Destino é obrigatória para Transferência.</small>
+            <div class="invalid-hint"
+              *ngIf="formTransacao.get('contaDestinoId')?.touched && formTransacao.get('contaDestinoId')?.errors?.['required']">
+              Conta Destino é obrigatória para Transferência.
             </div>
           </div>
 
-          <!-- Transação Estornada: SELECT (Estorno) -->
           <div class="col-md-6" *ngIf="isEstorno">
             <label class="form-label">Transação a Estornar</label>
 
-            <select class="form-select" formControlName="transacaoEstornadaId" [disabled]="carregandoTransacoesEstorno">
+            <select class="form-select form-select-lg" formControlName="transacaoEstornadaId"
+              [disabled]="carregandoTransacoesEstorno">
               <option [ngValue]="null">Selecione...</option>
               <option *ngFor="let te of transacoesPassiveisDeEstorno" [ngValue]="te.id">
                 {{ formatarTransacaoParaEstorno(te) }}
@@ -255,9 +352,9 @@
               Carregando transações passíveis de estorno...
             </div>
 
-            <div class="text-danger mt-1" *ngIf="formTransacao.get('transacaoEstornadaId')?.touched
-                && formTransacao.get('transacaoEstornadaId')?.errors?.['required']">
-              <small>Selecione a transação que deseja estornar.</small>
+            <div class="invalid-hint"
+              *ngIf="formTransacao.get('transacaoEstornadaId')?.touched && formTransacao.get('transacaoEstornadaId')?.errors?.['required']">
+              Selecione a transação que deseja estornar.
             </div>
 
             <div class="text-muted small mt-2"
@@ -267,17 +364,20 @@
           </div>
 
           <div class="col-12">
-            <div class="alert alert-info mb-0">
-              Conta Origem: <strong>{{ contaSelecionadaId }}</strong>
+            <div class="alert alert-info d-flex align-items-center gap-2 mb-0">
+              <span class="badge bg-info-subtle text-info-emphasis rounded-pill px-3 py-2">
+                Origem
+              </span>
+              <span>Conta: <strong>{{ contaSelecionadaId }}</strong></span>
             </div>
           </div>
 
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button type="button" class="btn btn-outline-secondary" (click)="modal.dismiss()">Cancelar</button>
-        <button type="submit" class="btn btn-primary" [disabled]="formTransacao.invalid">
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-light border" (click)="modal.dismiss()">Cancelar</button>
+        <button type="submit" class="btn btn-primary px-4" [disabled]="formTransacao.invalid">
           Criar
         </button>
       </div>

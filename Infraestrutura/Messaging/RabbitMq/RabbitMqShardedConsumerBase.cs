@@ -58,14 +58,14 @@ namespace Infraestrutura.Messaging.RabbitMq
             {
                 var queue = $"{QueueBase}.shard-{shard}.queue";
                 ch.BasicConsume(
-    queue: queue,
-    autoAck: false,
-    consumerTag: "",
-    noLocal: false,
-    exclusive: false,
-    arguments: null,
-    consumer: consumer
-);
+              queue: queue,
+             autoAck: false,
+              consumerTag: "",
+              noLocal: false,
+             exclusive: false,
+             arguments: null,
+            consumer: consumer
+            );
             }
 
             return Task.CompletedTask;

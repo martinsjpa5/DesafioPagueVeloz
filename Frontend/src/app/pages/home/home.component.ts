@@ -1,7 +1,17 @@
 import { CommonModule, CurrencyPipe } from '@angular/common';
 import { Component, TemplateRef, ViewChild, inject } from '@angular/core';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators,
+} from '@angular/forms';
 import { NgbModal, NgbModalModule, NgbTooltipModule } from '@ng-bootstrap/ng-bootstrap';
+import { NgxMaskDirective } from 'ngx-mask';
 
 import { ContaService } from '../../domain/services/conta.service';
 import { TransacaoService } from '../../domain/services/transacao.service';
@@ -16,20 +26,28 @@ import { LoadingService } from '../../core/services/loading.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ApiErrorHelper } from '../../core/helpers/api-error.helper';
 import { ObterContaParaTransferenciaResponse } from '../../domain/models/obter-conta-para-transferencia-response.model';
-import { NgxMaskDirective } from 'ngx-mask';
+
 enum TipoOperacaoEnum {
   Credito = 1,
   Debito = 2,
   Reserva = 3,
   Captura = 4,
   Estorno = 5,
-  Transferencia = 6
+  Transferencia = 6,
 }
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, NgbModalModule, NgxMaskDirective, CurrencyPipe, NgbTooltipModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    NgbModalModule,
+    NgxMaskDirective,
+    CurrencyPipe,
+    NgbTooltipModule,
+  ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
 })
@@ -47,7 +65,7 @@ export class HomeComponent {
 
   cliente: ObterClienteResponse | null = null;
 
-  contas: number[] = [];              // agora só IDs
+  contas: number[] = [];
   contaSelecionadaId: number | null = null;
 
   contaSelecionadaDetalhe: ObterContaResponse | null = null;
@@ -95,6 +113,19 @@ export class HomeComponent {
     await this.carregarContas();
   }
 
+  private positiveNumberExceptEstornoValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const operacao = Number(this.formTransacao?.get('operacao')?.value);
+      const valor = Number(control.value);
+
+      if (operacao === TipoOperacaoEnum.Estorno) return null;
+
+      if (!Number.isFinite(valor) || valor <= 0) return { maiorQueZero: true };
+
+      return null;
+    };
+  }
+
   private buildForms(): void {
     this.formConta = this.fb.group({
       saldoInicial: [0, [Validators.required]],
@@ -103,7 +134,7 @@ export class HomeComponent {
 
     this.formTransacao = this.fb.group({
       operacao: [TipoOperacaoEnum.Credito, [Validators.required]],
-      quantia: [0, [Validators.required]],
+      quantia: [0, [Validators.required, this.positiveNumberExceptEstornoValidator()]],
       moeda: ['BRL', [Validators.required]],
       contaDestinoId: [null],
       transacaoEstornadaId: [null],
@@ -112,9 +143,7 @@ export class HomeComponent {
     this.formTransacao.get('operacao')?.valueChanges.subscribe(async () => {
       this.applyOperacaoValidators();
 
-      // TRANSFERÊNCIA
       if (this.isTransferencia) {
-        // limpa estorno
         this.transacoesPassiveisDeEstorno = [];
         this.formTransacao.patchValue({ transacaoEstornadaId: null }, { emitEvent: false });
 
@@ -122,9 +151,7 @@ export class HomeComponent {
         return;
       }
 
-      // ESTORNO
       if (this.isEstorno) {
-        // limpa transferência
         this.contasDestino = [];
         this.formTransacao.patchValue({ contaDestinoId: null }, { emitEvent: false });
 
@@ -132,7 +159,6 @@ export class HomeComponent {
         return;
       }
 
-      // OUTROS: limpa ambos
       this.contasDestino = [];
       this.transacoesPassiveisDeEstorno = [];
       this.formTransacao.patchValue(
@@ -149,6 +175,7 @@ export class HomeComponent {
 
     const contaDestinoCtrl = this.formTransacao.get('contaDestinoId');
     const transacaoEstornadaCtrl = this.formTransacao.get('transacaoEstornadaId');
+    const quantiaCtrl = this.formTransacao.get('quantia');
 
     contaDestinoCtrl?.clearValidators();
     transacaoEstornadaCtrl?.clearValidators();
@@ -163,6 +190,8 @@ export class HomeComponent {
 
     contaDestinoCtrl?.updateValueAndValidity({ emitEvent: false });
     transacaoEstornadaCtrl?.updateValueAndValidity({ emitEvent: false });
+
+    quantiaCtrl?.updateValueAndValidity({ emitEvent: false });
   }
 
   private normalizeNumber(v: any): number {
@@ -170,23 +199,18 @@ export class HomeComponent {
     return Number.isFinite(n) ? n : 0;
   }
 
-  // Texto “bonito” no select de estorno
   formatarTransacaoParaEstorno(t: ObterTransacaoResponse): string {
     const parts: string[] = [];
 
-    // ID
     parts.push(`#${(t as any).id ?? '-'}`);
 
-    // Tipo / Status
     if ((t as any).tipo != null) parts.push(`Tipo: ${(t as any).tipo}`);
     if ((t as any).status != null) parts.push(`Status: ${(t as any).status}`);
 
-    // Quantia/Moeda
     const quantia = (t as any).quantia;
     const moeda = (t as any).moeda;
     if (quantia != null || moeda != null) parts.push(`${quantia ?? '-'} ${moeda ?? ''}`.trim());
 
-    // Destino (se tiver)
     const contaDestinoId = (t as any).contaDestinoId;
     const nomeClienteDestino = (t as any).nomeClienteContaDestino;
     if (contaDestinoId != null) parts.push(`Dest: ${contaDestinoId}`);
@@ -204,7 +228,6 @@ export class HomeComponent {
 
       this.contas = this.cliente?.contas ?? [];
 
-      // se a conta selecionada não existir mais, limpa
       if (this.contaSelecionadaId && !this.contas.includes(this.contaSelecionadaId)) {
         this.contaSelecionadaId = null;
         this.contaSelecionadaDetalhe = null;
@@ -247,7 +270,6 @@ export class HomeComponent {
     }
   }
 
-
   async carregarTransacoes(contaId: number): Promise<void> {
     this.loadingService.show();
 
@@ -262,7 +284,6 @@ export class HomeComponent {
     }
   }
 
-  // ===== Transferência (6) =====
   async carregarContasDestinoParaTransferencia(): Promise<void> {
     if (!this.contaSelecionadaId) {
       this.contasDestino = [];
@@ -277,7 +298,7 @@ export class HomeComponent {
       this.contasDestino = resp?.data ?? [];
 
       const atual = this.formTransacao.get('contaDestinoId')?.value;
-      if (atual && !this.contasDestino.some(x => x.id === Number(atual))) {
+      if (atual && !this.contasDestino.some((x) => x.id === Number(atual))) {
         this.formTransacao.patchValue({ contaDestinoId: null }, { emitEvent: false });
       }
     } catch (error) {
@@ -289,7 +310,6 @@ export class HomeComponent {
     }
   }
 
-  // ===== Estorno (5) =====
   async carregarTransacoesPassiveisDeEstorno(): Promise<void> {
     if (!this.contaSelecionadaId) {
       this.transacoesPassiveisDeEstorno = [];
@@ -304,7 +324,7 @@ export class HomeComponent {
       this.transacoesPassiveisDeEstorno = resp?.data ?? [];
 
       const atual = this.formTransacao.get('transacaoEstornadaId')?.value;
-      if (atual && !this.transacoesPassiveisDeEstorno.some(x => (x as any).id === Number(atual))) {
+      if (atual && !this.transacoesPassiveisDeEstorno.some((x) => (x as any).id === Number(atual))) {
         this.formTransacao.patchValue({ transacaoEstornadaId: null }, { emitEvent: false });
       }
     } catch (error) {
@@ -316,10 +336,6 @@ export class HomeComponent {
     }
   }
 
-  /**
-   * ✅ Atualiza saldo/status e transações (se tiver conta selecionada)
-   * + atualiza listas do modal (transferência/estorno) se aplicável
-   */
   async atualizarDados(toast: boolean = false): Promise<void> {
     if (this.isRefreshing) return;
 
@@ -327,12 +343,10 @@ export class HomeComponent {
     this.loadingService.show();
 
     try {
-      // Atualiza cliente + ids das contas
       const resp = await this.contaService.Obter();
       this.cliente = resp?.data ?? null;
       this.contas = this.cliente?.contas ?? [];
 
-      // Se a selecionada sumiu
       if (this.contaSelecionadaId && !this.contas.includes(this.contaSelecionadaId)) {
         this.contaSelecionadaId = null;
         this.contaSelecionadaDetalhe = null;
@@ -341,7 +355,6 @@ export class HomeComponent {
         return;
       }
 
-      // Atualiza detalhe da conta selecionada
       if (this.contaSelecionadaId) {
         const contaResp = await this.contaService.ObterPorId(this.contaSelecionadaId);
         this.contaSelecionadaDetalhe = contaResp?.data ?? null;
@@ -353,7 +366,6 @@ export class HomeComponent {
         this.transacoes = [];
       }
 
-      // Atualiza listas do modal dependendo da operação selecionada
       if (this.isTransferencia) {
         await this.carregarContasDestinoParaTransferencia();
       }
@@ -417,7 +429,6 @@ export class HomeComponent {
 
     this.applyOperacaoValidators();
 
-    // limpa listas
     this.contasDestino = [];
     this.transacoesPassiveisDeEstorno = [];
 
@@ -435,15 +446,22 @@ export class HomeComponent {
       return;
     }
 
+    const operacao = this.normalizeNumber(this.formTransacao.value.operacao);
+    const quantia = this.normalizeNumber(this.formTransacao.value.quantia);
+
+    // ✅ reforço no submit (defesa extra)
+    if (operacao !== TipoOperacaoEnum.Estorno && quantia <= 0) {
+      this.toastService.error('A quantia deve ser maior que zero para esta operação.');
+      return;
+    }
+
     this.loadingService.show();
 
     try {
-      const operacao = this.normalizeNumber(this.formTransacao.value.operacao);
-
       const payload: CriarTransacaoRequest = {
         contaOrigemId: this.contaSelecionadaId,
         operacao,
-        quantia: this.normalizeNumber(this.formTransacao.value.quantia),
+        quantia,
         moeda: this.formTransacao.value.moeda,
         contaDestinoId: this.formTransacao.value.contaDestinoId ?? null,
         transacaoEstornadaId: this.formTransacao.value.transacaoEstornadaId ?? null,

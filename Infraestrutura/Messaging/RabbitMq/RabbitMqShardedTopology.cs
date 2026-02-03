@@ -28,7 +28,6 @@ namespace Infraestrutura.Messaging.RabbitMq
                 var retryQueue = $"{queue}.retry";
                 var dlq = $"{queue}.dlq";
 
-                // Main shard queue
                 var qArgs = new Dictionary<string, object>
                 {
                     ["x-single-active-consumer"] = true
@@ -37,7 +36,6 @@ namespace Infraestrutura.Messaging.RabbitMq
                 ch.QueueDeclare(queue: queue, durable: true, exclusive: false, autoDelete: false, arguments: qArgs);
                 ch.QueueBind(queue: queue, exchange: exchangeBase, routingKey: routingKey);
 
-                // Retry queue (TTL -> dead-letter back to main exchange/routingKey)
                 var retryArgs = new Dictionary<string, object>
                 {
                     ["x-message-ttl"] = retryTtlMs,
@@ -49,7 +47,6 @@ namespace Infraestrutura.Messaging.RabbitMq
                 ch.QueueDeclare(queue: retryQueue, durable: true, exclusive: false, autoDelete: false, arguments: retryArgs);
                 ch.QueueBind(queue: retryQueue, exchange: retryExchange, routingKey: routingKey);
 
-                // DLQ
                 var dlqArgs = new Dictionary<string, object>
                 {
                     ["x-single-active-consumer"] = true
