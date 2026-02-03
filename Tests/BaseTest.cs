@@ -2,13 +2,13 @@
 
 namespace Tests
 {
-    public class CommonTest
+    public class BaseTest
     {
         public readonly AutoMocker _autoMocker;
-        public CommonTest()
+        public BaseTest()
         {
             _autoMocker = new AutoMocker();
         }
     }
-}youtu
+}
 
