@@ -302,3 +302,9 @@ Esse valor representa **processamento end-to-end real**, incluindo:
 - **p95:** **127.39 ms**
 - **Falhas HTTP:** **0.00%**
 
+---
+
+## 🔭 Próximos Passos (Evoluções Planejadas)
+- Logs estruturados com Serilog
+- Métricas com Prometheus + Grafana
+- Tracing distribuído com OpenTelemetry + Jaeger
