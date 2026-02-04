@@ -84,8 +84,8 @@ namespace Application.Services
 
             var response = MapearResponse(transacao, contaOrigem);
 
-            await PublicarEventoTransacaoCriadaAsync(clienteId, transacao.Id, correlationId);
-
+            await PublicarEventoTransacaoCriadaAsync(contaOrigem.Id, transacao.Id, correlationId);
+                
             return ResultPatternGeneric<CriarTransacaoResponse>.SucessoBuilder(response);
         }
 
@@ -193,11 +193,11 @@ namespace Application.Services
             };
         }
 
-        private async Task PublicarEventoTransacaoCriadaAsync(int clienteId, int transacaoId, string correlationId)
+        private async Task PublicarEventoTransacaoCriadaAsync(int contaId, int transacaoId, string correlationId)
         {
             var evt = new TransacaoCriadaEvent { TransacaoId = transacaoId };
 
-            var shard = ShardRouter.CalculateShard(clienteId.ToString(), _opt.ShardCount);
+            var shard = ShardRouter.CalculateShard(contaId.ToString(), _opt.ShardCount);
             var exchange = "transacoes.exchange";
             var routingKey = $"transacoes.shard-{shard}";
 
