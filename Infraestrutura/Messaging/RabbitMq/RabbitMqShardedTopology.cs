@@ -30,7 +30,7 @@ namespace Infraestrutura.Messaging.RabbitMq
 
                 var qArgs = new Dictionary<string, object>
                 {
-                    ["x-single-active-consumer"] = true
+                   
                 };
 
                 ch.QueueDeclare(queue: queue, durable: true, exclusive: false, autoDelete: false, arguments: qArgs);
@@ -41,7 +41,6 @@ namespace Infraestrutura.Messaging.RabbitMq
                     ["x-message-ttl"] = retryTtlMs,
                     ["x-dead-letter-exchange"] = exchangeBase,
                     ["x-dead-letter-routing-key"] = routingKey,
-                    ["x-single-active-consumer"] = true
                 };
 
                 ch.QueueDeclare(queue: retryQueue, durable: true, exclusive: false, autoDelete: false, arguments: retryArgs);
@@ -49,7 +48,6 @@ namespace Infraestrutura.Messaging.RabbitMq
 
                 var dlqArgs = new Dictionary<string, object>
                 {
-                    ["x-single-active-consumer"] = true
                 };
 
                 ch.QueueDeclare(queue: dlq, durable: true, exclusive: false, autoDelete: false, arguments: dlqArgs);

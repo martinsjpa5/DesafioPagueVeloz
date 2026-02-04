@@ -12,7 +12,7 @@ namespace Infraestrutura.Messaging.RabbitMq
         protected abstract string QueueBase { get; }
 
         protected virtual int MaxAttempts => 5;
-        protected virtual int RetryTtlMs => 15_000;
+        protected virtual int RetryTtlMs => 10_000;
 
         protected RabbitMqShardedConsumerBase(IRabbitConnection conn, RabbitMqOptions opt)
         {
