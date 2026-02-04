@@ -17,7 +17,7 @@ namespace Infraestrutura.Messaging.RabbitMq
         public bool PublisherConfirms { get; init; } = true;
         public TimeSpan PublishConfirmTimeout { get; init; } = TimeSpan.FromSeconds(5);
 
-        public int ShardCount { get; init; } = 1;
+        public int ShardCount { get; init; } = 3;
 
         public JsonSerializerOptions JsonOptions { get; init; } = new(JsonSerializerDefaults.Web);
     }

@@ -9,7 +9,7 @@ Este repositório contém uma solução completa para simular um **sistema finan
 - **Frontend Angular** (painel web) com autenticação, proteção de rotas e interceptor de 401
 - **Infra local via Docker Compose** (SQL Server, RabbitMQ Management, Redis)
 
-A arquitetura:
+A arquitetura
 - **DDD + Clean Architecture**
 - **Event-Driven / Consistência eventual**
 - **Sharding em filas RabbitMQ** (roteamento determinístico + single-active-consumer por shard)
