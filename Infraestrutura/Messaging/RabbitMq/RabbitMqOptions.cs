@@ -12,12 +12,12 @@ namespace Infraestrutura.Messaging.RabbitMq
         public string VirtualHost { get; init; } = "/";
         public bool UseSsl { get; init; } = false;
 
-        public ushort PrefetchCount { get; init; } = 20;
+        public ushort PrefetchCount { get; init; } = 10;
 
         public bool PublisherConfirms { get; init; } = true;
         public TimeSpan PublishConfirmTimeout { get; init; } = TimeSpan.FromSeconds(5);
 
-        public int ShardCount { get; init; } = 1;
+        public int ShardCount { get; init; } = 3;
 
         public JsonSerializerOptions JsonOptions { get; init; } = new(JsonSerializerDefaults.Web);
     }
