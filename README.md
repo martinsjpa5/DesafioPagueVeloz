@@ -245,5 +245,60 @@ dotnet test
 
 ---
 
+## 📈 Teste de Carga (k6)
 
+### Cenário: **5.000 requisições** (shared-iterations)
+- **Executor:** `shared-iterations`
+- **VUs:** 20
+- **Total de requisições:** 5.000
+- **Endpoint:** `POST /Transacao`
+- **Payload:** `quantia = 1` (mesma conta para estressar concorrência — *hot account*)
+- **Falhas HTTP:** 0%
+
+### Resultados (HTTP)
+- **Throughput:** **238.88 req/s** (`http_reqs`)
+- **Latência média (avg):** **83.3 ms**
+- **p90:** **80.59 ms**
+- **p95:** **90.98 ms**
+- **Máximo:** **2.99 s**
+- **Erros:** **0.00%** (0/5000)
+
+## ⚙️ Capacidade de Processamento do Worker
+
+Durante os testes, a capacidade real do worker foi medida diretamente no RabbitMQ através da taxa de **ACK/s** (mensagens processadas com sucesso).
+
+### Resultado observado
+- **Throughput do worker:** **~100 transações por segundo (TPS)**
+- Medido como:
+  - ~50 ACK/s em `transacoes.shard-0.queue`
+  - ~50 ACK/s em `transacoes.shard-1.queue`
+
+Esse valor representa **processamento end-to-end real**, incluindo:
+- consumo da mensagem
+- execução da regra de negócio
+- controle de concorrência (`rowVersion`)
+- persistência no banco
+- invalidação de cache
+- `BasicAck` no RabbitMQ
+
+> ⚠️ Observação: o teste foi executado em cenário de **alta contenção** (hot account), com poucas contas ativas e somente 1 replica, o que reduz o throughput máximo teórico. Em cenários com mais contas, o TPS tende a aumentar.
+
+---
+
+## 📈 Teste de Carga Inicial (k6 – Ramp-up)
+
+### Cenário
+- **Executor:** `ramping-vus`
+- **VUs máximos:** 50
+- **Duração total:** ~1 minuto
+- **Endpoint:** `POST /Transacao`
+- **Objetivo:** avaliar latência e capacidade de ingestão da API sob aumento progressivo de carga
+
+### Resultados (HTTP)
+- **Total de requisições:** **12.753**
+- **Throughput médio:** **~212.5 req/s**
+- **Latência média:** **94.72 ms**
+- **p90:** **101.16 ms**
+- **p95:** **127.39 ms**
+- **Falhas HTTP:** **0.00%**
 
